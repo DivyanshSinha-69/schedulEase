@@ -31,3 +31,14 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Application Configuration - IMPORTANT! ###
+src/main/resources/application.properties
+
+### Optional: Ignore log files ###
+*.log
+logs/
+
+### Optional: Ignore OS-specific files ###
+.DS_Store
+Thumbs.db
