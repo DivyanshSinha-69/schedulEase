@@ -60,6 +60,8 @@ public class Booking {
 
     @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<BookingEquipment> equipmentAllocations = new HashSet<>();
+    
+    
 
     public enum BookingStatus {
         PENDING, CONFIRMED, CANCELLED
@@ -184,5 +186,10 @@ public class Booking {
 
     public void setEquipmentAllocations(Set<BookingEquipment> equipmentAllocations) {
         this.equipmentAllocations = equipmentAllocations;
+    }
+    
+    public void addEquipment(BookingEquipment equipment) {
+        equipmentAllocations.add(equipment);
+        equipment.setBooking(this);
     }
 }

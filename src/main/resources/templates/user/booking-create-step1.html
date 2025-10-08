@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Create Booking - Step 1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .equip-btn {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            background-color: #f9fafb;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .equip-btn:hover {
+            background-color: #e5e7eb;
+        }
+        .room-hidden { display: none; }
+        /* Remove number input spinners for all browsers */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen font-sans">
+
+<div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-10 relative mx-4 sm:mx-0">
+    <h2 class="text-3xl font-extrabold mb-10 text-gray-900">Step 1 of 3: Select Resources</h2>
+
+    <!-- Error Message Display -->
+    <div th:if="${error}" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+        <span th:text="${error}"></span>
+    </div>
+
+    <form th:action="@{/booking/create}" method="post">
+        <!-- Filtering & Sorting Controls -->
+        <div class="flex gap-3 mb-5 items-center flex-wrap">
+            <select id="floorFilter" class="flex-1 px-2 py-2 min-w-[120px] border border-gray-300 rounded text-gray-700" aria-label="Filter by Floor">
+                <option value="">By Floor ▼</option>
+                <option th:each="floor : ${roomFloors}" th:value="${floor}" th:text="${floor}"></option>
+            </select>
+            <select id="capacityFilter" class="flex-1 px-2 py-2 min-w-[120px] border border-gray-300 rounded text-gray-700" aria-label="Filter by Capacity">
+                <option value="">By Capacity ▼</option>
+                <option value="1-10">1-10</option>
+                <option value="11-20">11-20</option>
+                <option value="21-30">21-30</option>
+                <option value="31+">31+</option>
+            </select>
+            <select id="sortRooms" class="flex-1 px-2 py-2 min-w-[120px] border border-gray-300 rounded text-gray-700" aria-label="Sort Rooms">
+                <option value="none">Sort by…</option>
+                <option value="capacity">Capacity</option>
+                <option value="floor">Floor</option>
+                <option value="name">Name</option>
+            </select>
+            <button type="button" id="clearFilters" class="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300">Clear Filters</button>
+        </div>
+
+        <label class="block mb-4 text-lg font-semibold text-gray-800">Select Rooms: *</label>
+        <div id="roomsList" class="border border-gray-300 rounded-xl p-6 max-h-56 overflow-auto bg-gray-50 shadow-inner space-y-3 mb-8">
+            <label th:each="room,iterStat : ${availableRooms}"
+                class="flex items-center space-x-4 py-2 px-3 rounded-lg cursor-pointer hover:bg-gray-100 transition group room-row"
+                th:attr="data-roomname=${room.name},data-roomfloor=${room.floor},data-roomcapacity=${room.occupancy}">
+                <input type="checkbox" name="rooms"
+                       th:value="${room.id}"
+                       class="form-checkbox h-6 w-6 text-blue-600 cursor-pointer" aria-label="Select Room"/>
+                <span class="text-lg text-gray-700 select-none"
+                      th:text="${room.name + ' - Floor ' + room.floor + ' - Capacity: ' + room.occupancy}"></span>
+                <span class="ml-2 px-2 py-1"
+                      th:classappend="${room.occupancy > 25} ? 'bg-green-200' : (${room.occupancy > 15} ? 'bg-orange-100' : 'bg-red-100') + ' rounded text-xs'"
+                      th:text="${room.occupancy > 25 ? 'Spacious' : room.occupancy > 15 ? 'Medium' : 'Small'}"></span>
+            </label>
+        </div>
+
+        <!-- Responsive, Clean Equipment Section -->
+        <label class="block mb-4 mt-8 text-lg font-semibold text-gray-800">Select Equipment:</label>
+        <div class="flex flex-wrap gap-8 max-w-full items-center mb-10">
+            <div
+                th:each="equip : ${availableEquipments}"
+                class="flex items-center gap-2 mb-4 min-w-[260px] max-w-[320px] px-4 py-2 bg-gray-50 rounded-xl border border-gray-300 shadow">
+                <span class="font-semibold w-24 text-gray-700 select-none" th:text="${equip.equipmentType.name + ':'}"></span>
+                <button type="button"
+                        th:id="'dec' + ${equip.id}"
+                        class="equip-btn"
+                        aria-label="Decrease">−</button>
+                <input type="number"
+                       th:id="'qty' + ${equip.id}"
+                       th:name="'equipment_' + ${equip.id}"
+                       value="0"
+                       min="0"
+                       th:attr="max=${equip.totalQuantity - equip.allocatedQuantity}"
+                       class="no-spinners w-16 text-center border border-gray-300 rounded-md px-2 py-2 text-xl text-gray-700 bg-white focus:outline-none focus:ring-2"
+                       style="font-family:inherit; font-size:1.35rem;" />
+                <button type="button"
+                        th:id="'inc' + ${equip.id}"
+                        class="equip-btn"
+                        aria-label="Increase">+</button>
+                <span class="ml-2 text-gray-500 text-sm"
+                      th:text="'(' + (${equip.totalQuantity} - ${equip.allocatedQuantity}) + ' available)'">
+                </span>
+            </div>
+        </div>
+
+        <div class="flex justify-between mt-14 max-w-3xl">
+            <a href="/" class="px-10 py-3 bg-gray-300 rounded-xl font-semibold shadow transition hover:bg-gray-400">
+                Cancel
+            </a>
+            <button type="submit" class="px-10 py-3 bg-blue-600 rounded-xl font-semibold text-white shadow-lg transition hover:bg-blue-700">
+                Next: Select Date &amp; Time →
+            </button>
+        </div>
+    </form>
+</div>
+
+<script th:inline="javascript">
+/*<![CDATA[*/
+(function() {
+    // Equipment increment/decrement and input validation
+    const equipments = /*[[${availableEquipments}]]*/ [];
+    equipments.forEach(equip => {
+        const equipId = equip.id;
+        const incBtn = document.getElementById('inc' + equipId);
+        const decBtn = document.getElementById('dec' + equipId);
+        const qtyInput = document.getElementById('qty' + equipId);
+        const maxQty = equip.totalQuantity - equip.allocatedQuantity;
+        if (incBtn && decBtn && qtyInput) {
+            incBtn.onclick = () => {
+                let val = Number(qtyInput.value);
+                if (val < maxQty) qtyInput.value = val + 1;
+            };
+            decBtn.onclick = () => {
+                let val = Number(qtyInput.value);
+                if (val > 0) qtyInput.value = val - 1;
+            };
+            qtyInput.oninput = () => {
+                let val = Number(qtyInput.value);
+                if (isNaN(val) || val < 0) qtyInput.value = 0;
+                else if (val > maxQty) qtyInput.value = maxQty;
+                else qtyInput.value = Math.floor(val);
+            };
+        }
+    });
+
+    // Room filtering and sorting (unchanged, see above)
+    const floorFilter = document.getElementById('floorFilter');
+    const capacityFilter = document.getElementById('capacityFilter');
+    const sortRooms = document.getElementById('sortRooms');
+    const clearBtn = document.getElementById('clearFilters');
+    const roomRows = Array.from(document.querySelectorAll('.room-row'));
+
+    function updateRoomDisplay() {
+        const selectedFloor = floorFilter.value;
+        const selectedCapacity = capacityFilter.value;
+        let minCap = 0, maxCap = Infinity;
+        if (selectedCapacity) {
+            if (selectedCapacity === "31+") {
+                minCap = 31; maxCap = Infinity;
+            } else if (selectedCapacity.includes('-')) {
+                [minCap, maxCap] = selectedCapacity.split('-').map(Number);
+            }
+        }
+        roomRows.forEach(row => {
+            const roomFloor = row.getAttribute('data-roomfloor');
+            const roomCap = parseInt(row.getAttribute('data-roomcapacity'));
+            let match = true;
+            if (selectedFloor && selectedFloor !== roomFloor) match = false;
+            if (selectedCapacity && (roomCap < minCap || roomCap > maxCap)) match = false;
+            row.style.display = match ? '' : 'none';
+        });
+    }
+    if (floorFilter) floorFilter.addEventListener('input', updateRoomDisplay);
+    if (capacityFilter) capacityFilter.addEventListener('input', updateRoomDisplay);
+
+    if (sortRooms) sortRooms.addEventListener('change', function() {
+        let sorted = roomRows.slice();
+        if (sortRooms.value === 'capacity') {
+            sorted.sort((a, b) => parseInt(a.getAttribute('data-roomcapacity')) - parseInt(b.getAttribute('data-roomcapacity')));
+        } else if (sortRooms.value === 'floor') {
+            sorted.sort((a, b) => String(a.getAttribute('data-roomfloor')).localeCompare(b.getAttribute('data-roomfloor')));
+        } else if (sortRooms.value === 'name') {
+            sorted.sort((a, b) => String(a.getAttribute('data-roomname')).localeCompare(b.getAttribute('data-roomname')));
+        }
+        const container = document.getElementById('roomsList');
+        sorted.forEach(row => container.appendChild(row));
+    });
+
+    if (clearBtn) clearBtn.addEventListener('click', function() {
+        floorFilter.value = "";
+        capacityFilter.value = "";
+        updateRoomDisplay();
+    });
+})();
+/*]]>*/
+</script>
+
+</body>
+</html>
