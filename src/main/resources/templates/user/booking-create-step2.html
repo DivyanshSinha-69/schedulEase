@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Booking - Step 2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen font-sans">
+
+<div class="bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-10 relative mx-4 sm:mx-0">
+    <h2 class="text-3xl font-extrabold mb-10 text-gray-900">Step 2 of 3: Select Date &amp; Time</h2>
+
+    <!-- Summary -->
+    <div class="mb-6">
+        <h3 class="text-lg font-semibold mb-2">Selected Rooms:</h3>
+        <p class="text-gray-700 text-xl font-medium" th:text="${#strings.listJoin(selectedRooms.![name], ', ')}"></p>
+        <h3 class="text-lg font-semibold mt-4 mb-2">Selected Equipment:</h3>
+        <ul class="list-disc ml-6 text-gray-700">
+            <li th:each="equip : ${selectedEquipments}"
+                th:text="${equip.equipmentType.name + ': ' + equip.quantity}"></li>
+        </ul>
+    </div>
+
+    <!-- Date/Time Form -->
+    <form th:action="@{/booking/checkAvailability}" method="post">
+        <div class="mb-6">
+            <label class="block mb-1 font-semibold">Select Date: *</label>
+            <input type="date" name="startDate" th:value="${startDate}" class="w-full px-4 py-3 border rounded-md border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600" required />
+        </div>
+        <div class="flex gap-6 mb-6">
+            <div class="flex-1">
+                <label class="block mb-1 font-semibold">Start Time: *</label>
+                <input type="time" name="startTime" th:value="${startTime}" class="w-full px-4 py-3 border rounded-md border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600" required />
+            </div>
+            <div class="flex-1">
+                <label class="block mb-1 font-semibold">End Time: *</label>
+                <input type="time" name="endTime" th:value="${endTime}" class="w-full px-4 py-3 border rounded-md border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600" required />
+            </div>
+        </div>
+
+        <!-- Hidden fields for selected rooms/equipment -->
+        <input type="hidden" name="rooms" th:value="${room.id}" th:each="room : ${selectedRooms}" />
+        <input type="hidden" th:name="'equipment_' + ${equip.equipmentType.id}" th:value="${equip.quantity}" th:each="equip : ${selectedEquipments}" />
+        <!-- Also pass the current date/time values, so they persist on refresh -->
+        <input type="hidden" name="startDate" th:value="${startDate}" />
+        <input type="hidden" name="startTime" th:value="${startTime}" />
+        <input type="hidden" name="endTime" th:value="${endTime}" />
+
+        <button type="submit" class="w-full py-4 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500 transition">
+            CHECK AVAILABILITY
+        </button>
+    </form>
+
+    <!-- Availability Result -->
+    <div th:if="${availabilityChecked}" class="mt-8 bg-gray-50 border border-gray-300 rounded-md p-6 space-y-4 shadow-inner font-mono text-lg text-gray-700">
+        <div th:if="${isAvailable}" class="font-semibold text-green-600 text-xl">✓ Available for selected time slot!</div>
+        <div th:if="${!isAvailable}" class="font-semibold text-red-600 text-xl">✗ Not available for selected time slot.</div>
+    </div>
+
+    <div class="flex justify-between mt-14">
+        <a href="/booking/create" class="px-10 py-3 bg-gray-300 rounded-xl font-semibold shadow transition hover:bg-gray-400">← Back</a>
+        <form th:action="@{/booking/confirm}" method="get">
+    <input type="hidden" name="startDate" th:value="${startDate}" />
+    <input type="hidden" name="startTime" th:value="${startTime}" />
+    <input type="hidden" name="endTime" th:value="${endTime}" />
+    <input type="hidden" name="rooms" th:value="${room.id}" th:each="room : ${selectedRooms}" />
+    <input type="hidden" th:name="'equipment_' + ${equip.equipmentType.id}" th:value="${equip.quantity}" th:each="equip : ${selectedEquipments}" />
+    <button type="submit" class="px-10 py-3 bg-blue-600 text-white rounded-xl font-semibold shadow-lg hover:bg-blue-700">
+        Next: Confirm →
+    </button>
+</form> </div>
+</div>
+</body>
+</html>
