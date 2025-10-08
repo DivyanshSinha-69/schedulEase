@@ -44,7 +44,8 @@ public class DatabaseConnectionTest {
     @Test
     public void testDatabaseName() {
         String dbName = jdbcTemplate.queryForObject("SELECT DATABASE()", String.class);
-        assertEquals("schedulEase", dbName, "Should connect to schedulEase database");
+        // MySQL on Windows is case-insensitive, so use equalsIgnoreCase
+        assertTrue(dbName.equalsIgnoreCase("schedulEase"), "Should connect to schedulEase database");
         System.out.println("✅ Connected to database: " + dbName);
     }
 }

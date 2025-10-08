@@ -30,6 +30,11 @@ public class Booking {
     @Column(name = "total_capacity_requested", nullable = false)
     private Integer totalCapacityRequested;
 
+    // ========== NEW FIELD ==========
+    @Column(name = "booking_reason", length = 255)
+    private String bookingReason;
+    // ===============================
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -65,7 +70,8 @@ public class Booking {
         this.createdAt = LocalDateTime.now();
     }
 
-    // Getters and Setters
+    // ========== Existing Getters and Setters ==========
+    
     public Long getId() {
         return id;
     }
@@ -113,6 +119,16 @@ public class Booking {
     public void setTotalCapacityRequested(Integer totalCapacityRequested) {
         this.totalCapacityRequested = totalCapacityRequested;
     }
+
+    // ========== NEW GETTER AND SETTER ==========
+    public String getBookingReason() {
+        return bookingReason;
+    }
+
+    public void setBookingReason(String bookingReason) {
+        this.bookingReason = bookingReason;
+    }
+    // ===========================================
 
     public LocalDateTime getCreatedAt() {
         return createdAt;

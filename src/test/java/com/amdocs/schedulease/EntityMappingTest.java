@@ -1,6 +1,6 @@
 package com.amdocs.schedulease;
 
-import com.amdocs.schedulease.entity.*;
+// import com.amdocs.schedulease.entity.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
