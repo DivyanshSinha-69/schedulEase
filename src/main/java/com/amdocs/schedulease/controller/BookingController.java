@@ -14,6 +14,7 @@ import jakarta.servlet.http.HttpSession;
 import com.amdocs.schedulease.exception.BookingConflictException;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -431,11 +432,22 @@ public class BookingController {
 
     // ========== List user's bookings ==========
     @GetMapping("/my-bookings")
-    public String listUserBookings(@RequestParam Long userId, Model model) {
-        List<Booking> bookings = bookingService.getBookingsByUserId(userId);
-        model.addAttribute("bookings", bookings);
+    public String listUserBookings(HttpSession session,
+                                   @RequestParam(defaultValue = "1") int page,
+                                   Model model) {
+        Long userId = (Long) session.getAttribute("userId");
+        if (userId == null) return "redirect:/login";
+
+        int pageSize = 6;
+        Page<Booking> bookingPage = bookingService.getPaginatedBookingsByUserId(userId, page - 1, pageSize);
+
+        model.addAttribute("bookingList", bookingPage.getContent());
+        model.addAttribute("page", page);
+        model.addAttribute("totalPages", bookingPage.getTotalPages());
+        model.addAttribute("userFullName", userService.getUserFullName(userId));
         return "user/my-bookings";
     }
+
 
     // ========== Cancel booking ==========
     @PostMapping("/cancel/{id}")

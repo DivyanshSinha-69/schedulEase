@@ -1,6 +1,9 @@
 package com.amdocs.schedulease.repository;
 
 import com.amdocs.schedulease.entity.Booking;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -22,4 +25,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findOverlappingBookings(@Param("roomIds") List<Long> roomIds,
                                           @Param("startDatetime") LocalDateTime startDatetime,
                                           @Param("endDatetime") LocalDateTime endDatetime);
+    
+    Page<Booking> findByUserId(Long userId, org.springframework.data.domain.Pageable pageable);
 }

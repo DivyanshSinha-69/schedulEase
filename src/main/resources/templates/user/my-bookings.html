@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Bookings - schedulEase</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link th:href="@{/css/style.css}" rel="stylesheet">
+</head>
+<body>
+    <div th:replace="~{fragments/header :: header}"></div>
+    <main class="container mt-4">
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <h2>My Bookings</h2>
+                <p class="text-muted">View and manage your resource bookings</p>
+            </div>
+        </div>
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body d-flex gap-2">
+                        <a href="/booking/create" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Create New Booking</a>
+                        <a href="/dashboard" class="btn btn-outline-primary"><i class="bi bi-house"></i> Dashboard</a>
+                        <a th:href="@{/user/profile}" class="btn btn-outline-secondary"><i class="bi bi-person"></i> Edit Profile</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-4" th:each="booking : ${bookingList}">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <h5 class="card-title mb-2">
+                            <i class="bi bi-calendar-check"></i>
+                            <span th:text="${#temporals.format(booking.startDatetime, 'dd MMM yyyy, hh:mm a')}"></span>
+                            -
+                            <span th:text="${#temporals.format(booking.endDatetime, 'dd MMM yyyy, hh:mm a')}"></span>
+                        </h5>
+                        <p class="mb-1">
+                            <span class="badge"
+                                  th:classappend="${booking.status == 'CONFIRMED'} ? 'bg-success' : (booking.status == 'PENDING' ? 'bg-warning text-dark' : 'bg-danger')"
+                                  th:text="${booking.status}">Status</span>
+                        </p>
+                        <p class="mb-1">
+                            <i class="bi bi-building"></i>
+                            <strong>Rooms:</strong>
+                            <span th:each="room : ${booking.rooms}" th:text="${room.name} + ' '"></span>
+                        </p>
+                        <p class="mb-1">
+                            <i class="bi bi-laptop"></i>
+                            <strong>Equipment:</strong>
+                            <span th:each="equip : ${booking.equipmentAllocations}" th:text="${equip.equipmentType.name} + ': ' + ${equip.quantity} + ' '"></span>
+                        </p>
+                        <div class="d-flex gap-2 mt-3">
+                            <a th:href="@{'/booking/details/' + ${booking.id}}" class="btn btn-outline-primary btn-sm"><i class="bi bi-eye"></i> View Details</a>
+                            <form th:action="@{'/booking/cancel/' + ${booking.id}}" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-x-circle"></i> Cancel</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Pagination Controls -->
+        <nav class="mt-4" aria-label="Page navigation">
+    <ul class="pagination justify-content-center">
+        <li class="page-item" th:classappend="${page == 1} ? 'disabled'">
+            <a class="page-link" th:href="@{'/booking/my-bookings'(page=${page - 1})}">&laquo; Previous</a>
+        </li>
+        <li class="page-item disabled">
+            <span class="page-link">Page <span th:text="${page}">1</span> of <span th:text="${totalPages}">1</span></span>
+        </li>
+        <li class="page-item" th:classappend="${page == totalPages} ? 'disabled'">
+            <a class="page-link" th:href="@{'/booking/my-bookings'(page=${page + 1})}">Next &raquo;</a>
+        </li>
+    </ul>
+</nav>
+
+    </main>
+    <div th:replace="~{fragments/footer :: footer}"></div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/main.js}"></script>
+</body>
+</html>
