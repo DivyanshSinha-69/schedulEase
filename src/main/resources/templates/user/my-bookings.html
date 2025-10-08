@@ -54,11 +54,15 @@
                             <span th:each="equip : ${booking.equipmentAllocations}" th:text="${equip.equipmentType.name} + ': ' + ${equip.quantity} + ' '"></span>
                         </p>
                         <div class="d-flex gap-2 mt-3">
-                            <a th:href="@{'/booking/details/' + ${booking.id}}" class="btn btn-outline-primary btn-sm"><i class="bi bi-eye"></i> View Details</a>
-                            <form th:action="@{'/booking/cancel/' + ${booking.id}}" method="post" class="d-inline">
-                                <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-x-circle"></i> Cancel</button>
-                            </form>
-                        </div>
+						    <a th:href="@{'/booking/details/' + ${booking.id}}" class="btn btn-outline-primary btn-sm">
+						        <i class="bi bi-eye"></i> View Details
+						    </a>
+						    <form th:if="${booking.status.name() != 'CANCELLED'}" th:action="@{'/booking/cancel/' + ${booking.id}}" method="get" class="d-inline">
+						        <button type="submit" class="btn btn-outline-danger btn-sm">
+						            <i class="bi bi-x-circle"></i> Cancel
+						        </button>
+						    </form>
+						</div>
                     </div>
                 </div>
             </div>

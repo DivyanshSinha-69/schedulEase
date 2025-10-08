@@ -450,6 +450,17 @@ public class BookingController {
 
 
     // ========== Cancel booking ==========
+    @GetMapping("/cancel/{id}")
+    public String openCancelModal(@PathVariable Long id,
+                               RedirectAttributes redirectAttributes,
+                               Model model) {
+        Booking booking = bookingService.getBookingById(id);
+        
+        model.addAttribute("booking", booking);
+        
+        return "user/cancel-booking";
+    }
+    
     @PostMapping("/cancel/{id}")
     public String cancelBooking(@PathVariable Long id, 
                                @RequestParam String reason,
