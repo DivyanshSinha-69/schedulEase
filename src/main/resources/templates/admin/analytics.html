@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Dashboard - schedulEase</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link th:href="@{/css/style.css}" rel="stylesheet">
+</head>
+<body>
+    <div th:replace="~{fragments/header :: header}"></div>
+    <div th:replace="~{fragments/navbar-admin :: navbar}"></div>
+
+    <main class="container mt-4">
+        <!-- Page Header -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <h2><i class="bi bi-graph-up"></i> Analytics Dashboard</h2>
+                <p class="text-muted">System insights and performance metrics</p>
+            </div>
+        </div>
+
+        <!-- Key Metrics Row -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="bi bi-people text-primary" style="font-size: 2.5rem;"></i>
+                        <h3 class="mt-2" th:text="${totalUsers}">0</h3>
+                        <p class="text-muted mb-0">Total Users</p>
+                        <small class="text-success">
+                            <i class="bi bi-check-circle"></i> 
+                            <span th:text="${activeUsers}">0</span> Active
+                        </small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="bi bi-calendar-check text-success" style="font-size: 2.5rem;"></i>
+                        <h3 class="mt-2" th:text="${totalBookings}">0</h3>
+                        <p class="text-muted mb-0">Total Bookings</p>
+                        <small class="text-muted">All time</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="bi bi-door-open text-info" style="font-size: 2.5rem;"></i>
+                        <h3 class="mt-2" th:text="${totalRooms}">0</h3>
+                        <p class="text-muted mb-0">Total Rooms</p>
+                        <small class="text-success">
+                            <i class="bi bi-check-circle"></i> 
+                            <span th:text="${availableRooms}">0</span> Available
+                        </small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="bi bi-box text-warning" style="font-size: 2.5rem;"></i>
+                        <h3 class="mt-2" th:text="${totalEquipment}">0</h3>
+                        <p class="text-muted mb-0">Equipment Types</p>
+                        <small class="text-muted">In system</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Booking Status Chart -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Bookings by Status</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Status</th>
+                                        <th>Count</th>
+                                        <th>Percentage</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:if="${bookingsByStatus != null and !bookingsByStatus.isEmpty()}">
+                                        <td><span class="badge bg-warning">Pending</span></td>
+                                        <td th:text="${bookingsByStatus['PENDING']}">0</td>
+                                        <td>
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar bg-warning" role="progressbar" 
+                                                     th:style="'width: ' + ${totalBookings > 0 ? (bookingsByStatus['PENDING'] * 100 / totalBookings) : 0} + '%'"
+                                                     th:text="${totalBookings > 0 ? #numbers.formatDecimal(bookingsByStatus['PENDING'] * 100 / totalBookings, 1, 1) : 0} + '%'">
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr th:if="${bookingsByStatus != null and !bookingsByStatus.isEmpty()}">
+                                        <td><span class="badge bg-success">Confirmed</span></td>
+                                        <td th:text="${bookingsByStatus['CONFIRMED']}">0</td>
+                                        <td>
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar bg-success" role="progressbar" 
+                                                     th:style="'width: ' + ${totalBookings > 0 ? (bookingsByStatus['CONFIRMED'] * 100 / totalBookings) : 0} + '%'"
+                                                     th:text="${totalBookings > 0 ? #numbers.formatDecimal(bookingsByStatus['CONFIRMED'] * 100 / totalBookings, 1, 1) : 0} + '%'">
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr th:if="${bookingsByStatus != null and !bookingsByStatus.isEmpty()}">
+                                        <td><span class="badge bg-danger">Cancelled</span></td>
+                                        <td th:text="${bookingsByStatus['CANCELLED']}">0</td>
+                                        <td>
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar bg-danger" role="progressbar" 
+                                                     th:style="'width: ' + ${totalBookings > 0 ? (bookingsByStatus['CANCELLED'] * 100 / totalBookings) : 0} + '%'"
+                                                     th:text="${totalBookings > 0 ? #numbers.formatDecimal(bookingsByStatus['CANCELLED'] * 100 / totalBookings, 1, 1) : 0} + '%'">
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr th:if="${bookingsByStatus == null or bookingsByStatus.isEmpty()}">
+                                        <td colspan="3" class="text-center text-muted">No booking data available</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Most Booked Rooms -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-trophy"></i> Most Booked Rooms</h5>
+                    </div>
+                    <div class="card-body">
+                        <div th:if="${mostBookedRooms != null and !mostBookedRooms.isEmpty()}">
+                            <div th:each="room : ${mostBookedRooms}" class="mb-3">
+                                <div class="d-flex justify-content-between">
+                                    <span th:text="${room.key}">Room Name</span>
+                                    <span class="badge bg-primary" th:text="${room.value} + ' bookings'">0 bookings</span>
+                                </div>
+                                <div class="progress mt-1" style="height: 20px;">
+                                    <div class="progress-bar bg-success" role="progressbar" 
+                                         th:style="'width: ' + ${room.value * 5} + '%'"
+                                         th:text="${room.value}">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div th:if="${mostBookedRooms == null or mostBookedRooms.isEmpty()}" 
+                             class="text-center text-muted py-4">
+                            <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                            <p class="mt-2">No booking data available yet</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Booking Trend (Last 7 Days) -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-graph-up-arrow"></i> Booking Trend (Last 7 Days)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div th:if="${bookingTrend != null and !bookingTrend.isEmpty()}">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Bookings</th>
+                                            <th>Visual</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="entry : ${bookingTrend}">
+                                            <td th:text="${#temporals.format(entry.key, 'EEE, MMM dd')}">Date</td>
+                                            <td th:text="${entry.value}">0</td>
+                                            <td>
+                                                <div class="progress" style="height: 20px;">
+                                                    <div class="progress-bar bg-info" role="progressbar" 
+                                                         th:style="'width: ' + ${entry.value * 10} + '%'"
+                                                         th:text="${entry.value}">
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div th:if="${bookingTrend == null or bookingTrend.isEmpty()}" 
+                             class="text-center text-muted py-4">
+                            <i class="bi bi-graph-down" style="font-size: 3rem;"></i>
+                            <p class="mt-2">No trend data available</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div th:replace="~{fragments/footer :: footer}"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/main.js}"></script>
+</body>
+</html>

@@ -11,6 +11,32 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
+	@ExceptionHandler(RoomNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public String handleRoomNotFound(RoomNotFoundException ex, Model model) {
+        model.addAttribute("errorMessage", ex.getMessage());
+        model.addAttribute("errorCode", "404");
+        model.addAttribute("errorType", "Room Not Found");
+        return "error/404";
+    }
+
+    @ExceptionHandler(EquipmentNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public String handleEquipmentNotFound(EquipmentNotFoundException ex, Model model) {
+        model.addAttribute("errorMessage", ex.getMessage());
+        model.addAttribute("errorCode", "404");
+        model.addAttribute("errorType", "Equipment Not Found");
+        return "error/404";
+    }
+
+    @ExceptionHandler(ResourceUnavailableException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public String handleResourceUnavailable(ResourceUnavailableException ex, Model model) {
+        model.addAttribute("errorMessage", ex.getMessage());
+        model.addAttribute("errorCode", "409");
+        model.addAttribute("errorType", "Resource Unavailable");
+        return "error/409";
+    }
     @ExceptionHandler(ResourceNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public String handleResourceNotFound(ResourceNotFoundException ex, Model model) {
@@ -64,5 +90,23 @@ public class GlobalExceptionHandler {
         model.addAttribute("errorCode", "500");
         model.addAttribute("errorDetails", ex.getMessage());
         return "error/500";
+    }
+    
+    @ExceptionHandler(UserApprovalException.class)
+    public String handleUserApprovalException(UserApprovalException ex, RedirectAttributes redirectAttributes) {
+        redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        return "redirect:/admin/user-approval";
+    }
+
+    @ExceptionHandler(StaffCreationException.class)
+    public String handleStaffCreationException(StaffCreationException ex, RedirectAttributes redirectAttributes) {
+        redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        return "redirect:/admin/staff-management";
+    }
+
+    @ExceptionHandler(ReportGenerationException.class)
+    public String handleReportGenerationException(ReportGenerationException ex, RedirectAttributes redirectAttributes) {
+        redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        return "redirect:/admin/analytics";
     }
 }
