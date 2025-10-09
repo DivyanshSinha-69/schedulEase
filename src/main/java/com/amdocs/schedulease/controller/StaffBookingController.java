@@ -2,9 +2,8 @@ package com.amdocs.schedulease.controller;
 
 import com.amdocs.schedulease.entity.Booking;
 import com.amdocs.schedulease.service.BookingService;
-
+import com.amdocs.schedulease.service.EmailService;
 import jakarta.servlet.http.HttpSession;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -20,13 +19,19 @@ public class StaffBookingController {
     @Autowired
     private BookingService bookingService;
 
+    @Autowired
+    private EmailService emailService;  // ADD THIS
+
     @GetMapping
-    public String listAllBookings(HttpSession session,
+    public String listAllBookings(
+            HttpSession session,
             @RequestParam(required = false) String status,
             Model model) {
-    	if (session.getAttribute("user") == null) {
+        
+        if (session.getAttribute("user") == null) {
             return "redirect:/auth/login";
         }
+        
         List<Booking> bookings;
         
         if (status != null && !status.isEmpty()) {
@@ -44,28 +49,40 @@ public class StaffBookingController {
     }
 
     @GetMapping("/view/{id}")
-    public String viewBookingDetails(HttpSession session,@PathVariable Long id, Model model) {
+    public String viewBookingDetails(
+            HttpSession session,
+            @PathVariable Long id, 
+            Model model) {
         
-    	if (session.getAttribute("user") == null) {
+        if (session.getAttribute("user") == null) {
             return "redirect:/auth/login";
         }
-    	Booking booking = bookingService.getBookingById(id);
+        
+        Booking booking = bookingService.getBookingById(id);
         model.addAttribute("booking", booking);
         model.addAttribute("pageTitle", "Booking Details");
         model.addAttribute("userRole", "STAFF");
         return "staff/booking-details";
     }
+
     @PostMapping("/approve/{id}")
-    public String approveBooking(HttpSession session,
+    public String approveBooking(
+            HttpSession session,
             @PathVariable Long id,
             RedirectAttributes redirectAttributes) {
-    	if (session.getAttribute("user") == null) {
+        
+        if (session.getAttribute("user") == null) {
             return "redirect:/auth/login";
         }
+        
         try {
             Booking booking = bookingService.approveBooking(id);
+            
+            // SEND APPROVAL EMAIL
+            emailService.sendBookingApprovalEmail(booking);
+            
             redirectAttributes.addFlashAttribute("successMessage", 
-                "Booking #" + booking.getId() + " approved successfully!");
+                "Booking #" + booking.getId() + " approved! Confirmation email sent to " + booking.getUser().getEmail());
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", 
                 "Failed to approve booking: " + e.getMessage());
@@ -74,24 +91,29 @@ public class StaffBookingController {
         return "redirect:/staff/bookings/view/" + id;
     }
 
-    // NEW: Decline booking
     @PostMapping("/decline/{id}")
-    public String declineBooking(HttpSession session,
+    public String declineBooking(
+            HttpSession session,
             @PathVariable Long id,
             @RequestParam String reason,
             RedirectAttributes redirectAttributes) {
         
-    	if (session.getAttribute("user") == null) {
+        if (session.getAttribute("user") == null) {
             return "redirect:/auth/login";
         }
+        
         try {
             if (reason == null || reason.trim().isEmpty()) {
                 throw new IllegalArgumentException("Decline reason is required");
             }
             
             Booking booking = bookingService.declineBooking(id, reason);
+            
+            // SEND DECLINED EMAIL
+            emailService.sendBookingDeclinedEmail(booking, reason);
+            
             redirectAttributes.addFlashAttribute("successMessage", 
-                "Booking #" + booking.getId() + " declined successfully!");
+                "Booking #" + booking.getId() + " declined. Notification email sent to " + booking.getUser().getEmail());
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", 
                 "Failed to decline booking: " + e.getMessage());
@@ -100,13 +122,14 @@ public class StaffBookingController {
         return "redirect:/staff/bookings/view/" + id;
     }
 
-    // NEW: Cancel confirmed booking
     @PostMapping("/cancel/{id}")
-    public String cancelBooking(HttpSession session,
+    public String cancelBooking(
+            HttpSession session,
             @PathVariable Long id,
             @RequestParam String reason,
             RedirectAttributes redirectAttributes) {
-    	if (session.getAttribute("user") == null) {
+        
+        if (session.getAttribute("user") == null) {
             return "redirect:/auth/login";
         }
         
@@ -116,8 +139,12 @@ public class StaffBookingController {
             }
             
             Booking booking = bookingService.cancelBooking(id, reason);
+            
+            // SEND CANCELLATION EMAIL
+            emailService.sendBookingCancellationEmail(booking, reason);
+            
             redirectAttributes.addFlashAttribute("successMessage", 
-                "Booking #" + booking.getId() + " cancelled successfully!");
+                "Booking #" + booking.getId() + " cancelled. Cancellation email sent to " + booking.getUser().getEmail());
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", 
                 "Failed to cancel booking: " + e.getMessage());
