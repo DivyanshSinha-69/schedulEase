@@ -65,4 +65,22 @@ public class GlobalExceptionHandler {
         model.addAttribute("errorDetails", ex.getMessage());
         return "error/500";
     }
+    
+    @ExceptionHandler(UserApprovalException.class)
+    public String handleUserApprovalException(UserApprovalException ex, RedirectAttributes redirectAttributes) {
+        redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        return "redirect:/admin/user-approval";
+    }
+
+    @ExceptionHandler(StaffCreationException.class)
+    public String handleStaffCreationException(StaffCreationException ex, RedirectAttributes redirectAttributes) {
+        redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        return "redirect:/admin/staff-management";
+    }
+
+    @ExceptionHandler(ReportGenerationException.class)
+    public String handleReportGenerationException(ReportGenerationException ex, RedirectAttributes redirectAttributes) {
+        redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        return "redirect:/admin/analytics";
+    }
 }

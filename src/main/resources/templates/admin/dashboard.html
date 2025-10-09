@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - schedulEase</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link th:href="@{/css/style.css}" rel="stylesheet">
+</head>
+<body>
+    <div th:replace="~{fragments/header :: header}"></div>
+    <div th:replace="~{fragments/navbar-admin :: navbar}"></div>
+
+    <main class="container mt-4">
+        <!-- Welcome Section -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <h2><i class="bi bi-shield-check text-danger"></i> Admin Dashboard</h2>
+                <p class="text-muted">Welcome back, <span th:text="${user.fullName}">Admin</span>! Here's your system overview</p>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="row mb-4">
+            <!-- Users Card -->
+            <div class="col-md-3">
+                <div class="card border-primary">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted">Total Users</h6>
+                                <h2 class="mb-0" th:text="${totalUsers}">0</h2>
+                                <small class="text-success">
+                                    <span th:text="${activeUsers}">0</span> Active
+                                </small>
+                            </div>
+                            <i class="bi bi-people text-primary" style="font-size: 3rem;"></i>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-primary text-white">
+                        <a href="/admin/user-management" class="text-white text-decoration-none">
+                            View Details <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pending Approvals Card -->
+            <div class="col-md-3">
+                <div class="card border-warning">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted">Pending Approvals</h6>
+                                <h2 class="mb-0 text-warning" th:text="${pendingUsers}">0</h2>
+                                <small class="text-muted">User registrations</small>
+                            </div>
+                            <i class="bi bi-clock-history text-warning" style="font-size: 3rem;"></i>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-warning">
+                        <a href="/admin/user-approval" class="text-dark text-decoration-none">
+                            Review Now <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bookings Card -->
+            <div class="col-md-3">
+                <div class="card border-success">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted">Total Bookings</h6>
+                                <h2 class="mb-0" th:text="${totalBookings}">0</h2>
+                                <small class="text-muted">All time</small>
+                            </div>
+                            <i class="bi bi-calendar-check text-success" style="font-size: 3rem;"></i>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-success text-white">
+                        <a href="/admin/monitor-bookings" class="text-white text-decoration-none">
+                            View Bookings <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rooms Card -->
+            <div class="col-md-3">
+                <div class="card border-info">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted">Available Rooms</h6>
+                                <h2 class="mb-0" th:text="${availableRooms}">0</h2>
+                                <small class="text-muted">
+                                    of <span th:text="${totalRooms}">0</span> total
+                                </small>
+                            </div>
+                            <i class="bi bi-door-open text-info" style="font-size: 3rem;"></i>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-info text-white">
+                        <a href="/admin/monitor-rooms" class="text-white text-decoration-none">
+                            Manage Rooms <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0"><i class="bi bi-lightning"></i> Quick Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <a href="/admin/user-approval" class="btn btn-outline-warning w-100 mb-2">
+                                    <i class="bi bi-check-circle"></i> Approve Users
+                                </a>
+                            </div>
+                            <div class="col-md-3">
+                                <a href="/admin/staff-management" class="btn btn-outline-primary w-100 mb-2">
+                                    <i class="bi bi-person-plus"></i> Add Staff
+                                </a>
+                            </div>
+                            <div class="col-md-3">
+                                <a href="/admin/analytics" class="btn btn-outline-success w-100 mb-2">
+                                    <i class="bi bi-graph-up"></i> View Analytics
+                                </a>
+                            </div>
+                            <div class="col-md-3">
+                                <a href="/admin/reports" class="btn btn-outline-info w-100 mb-2">
+                                    <i class="bi bi-file-earmark-text"></i> Generate Report
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity / Alerts -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-bell"></i> System Alerts</h5>
+                    </div>
+                    <div class="card-body">
+                        <div th:if="${pendingUsers > 0}" class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <strong>Attention!</strong> You have <span th:text="${pendingUsers}">0</span> pending user registration(s) waiting for approval.
+                            <a href="/admin/user-approval" class="alert-link">Review now</a>
+                        </div>
+                        <div th:if="${pendingUsers == 0}" class="text-center text-muted py-4">
+                            <i class="bi bi-check-circle" style="font-size: 3rem;"></i>
+                            <p class="mt-2">No pending actions required. System is running smoothly.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div th:replace="~{fragments/footer :: footer}"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/main.js}"></script>
+</body>
+</html>

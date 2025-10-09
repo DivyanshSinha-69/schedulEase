@@ -142,6 +142,7 @@ public class AuthServiceImpl implements AuthService {
 
     private void sendOtpEmail(String email, String otp, String fullName) {
         SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom("harshsinha190@gmail.com"); // ADD THIS LINE
         message.setTo(email);
         message.setSubject("Forgot Password OTP - schedulEase");
         message.setText("Hello " + fullName + ",\n\n" +
