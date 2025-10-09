@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -27,4 +28,10 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                                           @Param("endDatetime") LocalDateTime endDatetime);
     
     Page<Booking> findByUserId(Long userId, org.springframework.data.domain.Pageable pageable);
+
+    @Query("SELECT b FROM Booking b JOIN b.rooms r WHERE r.id = :roomId AND b.startDatetime < :dayEnd AND b.endDatetime > :dayStart")
+    List<Booking> findBookingsByRoomAndTimeRange(@Param("roomId") Long roomId, 
+                                                  @Param("dayStart") LocalDateTime dayStart, 
+                                                  @Param("dayEnd") LocalDateTime dayEnd);
+
 }
