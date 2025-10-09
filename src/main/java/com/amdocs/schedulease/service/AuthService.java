@@ -46,4 +46,8 @@ public interface AuthService {
      * @return true if password matches
      */
     boolean verifyPassword(String plainPassword, String hashedPassword);
+    
+    void initiateForgotPassword(String email);
+    boolean validateOtp(String email, String otp);
+    void resetPasswordWithOtp(String email, String newPassword);
 }
