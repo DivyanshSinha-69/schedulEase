@@ -12,7 +12,6 @@ import com.amdocs.schedulease.repository.BookingRepository;
 import com.amdocs.schedulease.repository.RoomRepository;
 import com.amdocs.schedulease.repository.EquipmentStockRepository;
 import com.amdocs.schedulease.repository.EquipmentTypeRepository;
-import com.amdocs.schedulease.service.BookingService;
 import com.amdocs.schedulease.exception.BookingConflictException;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -80,9 +79,14 @@ public class BookingServiceImpl implements BookingService {
     public Booking cancelBooking(Long bookingId, String cancelReason) {
         Booking booking = getBookingById(bookingId);
         if (booking == null) return null;
+        if (booking.getStatus() != Booking.BookingStatus.CONFIRMED) {
+            throw new IllegalStateException(
+                "Only CONFIRMED bookings can be cancelled. Current status: " + booking.getStatus());
+        }
         booking.setStatus(Booking.BookingStatus.CANCELLED);
         booking.setCancelReason(cancelReason);
         booking.setCancelledAt(LocalDateTime.now());
+        booking.setUpdatedAt(LocalDateTime.now());
         return bookingRepository.save(booking);
     }
 
@@ -203,6 +207,49 @@ public class BookingServiceImpl implements BookingService {
         return bookingRepository.findByUserId(userId, pageable);
     }
 
+    @Override
+    @Transactional
+    public Booking approveBooking(Long bookingId) {
+        Booking booking = getBookingById(bookingId);
+        
+        if (booking == null) {
+            throw new RuntimeException("Booking not found with ID: " + bookingId);
+        }
+        
+        // Only PENDING bookings can be approved
+        if (booking.getStatus() != Booking.BookingStatus.PENDING) {
+            throw new IllegalStateException(
+                "Only PENDING bookings can be approved. Current status: " + booking.getStatus());
+        }
+        
+        booking.setStatus(Booking.BookingStatus.CONFIRMED);
+        booking.setUpdatedAt(LocalDateTime.now());
+        
+        return bookingRepository.save(booking);
+    }
+
+    @Override
+    @Transactional
+    public Booking declineBooking(Long bookingId, String reason) {
+        Booking booking = getBookingById(bookingId);
+        
+        if (booking == null) {
+            throw new RuntimeException("Booking not found with ID: " + bookingId);
+        }
+        
+        // Only PENDING bookings can be declined
+        if (booking.getStatus() != Booking.BookingStatus.PENDING) {
+            throw new IllegalStateException(
+                "Only PENDING bookings can be declined. Current status: " + booking.getStatus());
+        }
+        
+        booking.setStatus(Booking.BookingStatus.CANCELLED);
+        booking.setCancelReason(reason);
+        booking.setCancelledAt(LocalDateTime.now());
+        booking.setUpdatedAt(LocalDateTime.now());
+        
+        return bookingRepository.save(booking);
+    }
 
 
 }

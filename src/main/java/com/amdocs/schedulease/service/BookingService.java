@@ -15,6 +15,11 @@ import java.util.Set;
 import org.springframework.data.domain.Page;
 
 public interface BookingService {
+	
+	// Staff approval/decline methods
+	Booking approveBooking(Long bookingId);
+	Booking declineBooking(Long bookingId, String reason);
+
     
     // Create a new booking
     Booking createBooking(Booking booking);
