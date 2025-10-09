@@ -3,6 +3,7 @@ package com.amdocs.schedulease.service;
 import com.amdocs.schedulease.entity.Role;
 import com.amdocs.schedulease.entity.StaffProfile;
 import com.amdocs.schedulease.entity.UserAccount;
+import java.time.LocalDate;
 
 import java.util.List;
 
@@ -58,7 +59,7 @@ public interface AdminService {
      * @throws StaffCreationException if creation fails
      */
     UserAccount createStaffAccount(String email, String password, String fullName, 
-                                   String phone, String department);
+            String phone, String department, LocalDate dob);
     
     /**
      * Assign role to user
