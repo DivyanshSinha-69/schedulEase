@@ -1,7 +1,11 @@
 package com.amdocs.schedulease.controller;
 
 import com.amdocs.schedulease.entity.Room;
+import com.amdocs.schedulease.entity.UserAccount;
 import com.amdocs.schedulease.service.RoomService;
+
+import jakarta.servlet.http.HttpSession;
+
 import com.amdocs.schedulease.service.EquipmentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -22,7 +26,21 @@ public class StaffDashboardController {
     private EquipmentService equipmentService;
 
     @GetMapping("/dashboard")
-    public String staffDashboard(Model model) {
+    public String staffDashboard(HttpSession session, Model model) {
+    	// Check if user is logged in
+        UserAccount user = (UserAccount) session.getAttribute("user");
+        if (user == null) {
+            return "redirect:/auth/login";
+        }
+        
+        // Check if user is STAFF
+        String role = (String) session.getAttribute("userRole");
+        if (role == null || !role.equals("STAFF")) {
+            return "redirect:/auth/login";
+        }
+        
+        // Your existing dashboard code...
+        model.addAttribute("totalRooms", roomService.getAllRooms().size());
         // Get statistics
         List<Room> allRooms = roomService.getAllRooms();
         long totalRooms = allRooms.size();
@@ -48,4 +66,6 @@ public class StaffDashboardController {
         
         return "staff/dashboard";
     }
+    
+
 }

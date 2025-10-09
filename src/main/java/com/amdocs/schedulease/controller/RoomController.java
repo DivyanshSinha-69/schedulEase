@@ -3,6 +3,9 @@ package com.amdocs.schedulease.controller;
 import com.amdocs.schedulease.entity.Room;
 import com.amdocs.schedulease.exception.ResourceUnavailableException;
 import com.amdocs.schedulease.service.RoomService;
+
+import jakarta.servlet.http.HttpSession;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -20,12 +23,16 @@ public class RoomController {
 
     // View all rooms
     @GetMapping
-    public String listRooms(
+    public String listRooms(HttpSession session,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String floor,
             @RequestParam(required = false) String search,
             Model model) {
         
+    	if (session.getAttribute("user") == null) {
+    	    return "redirect:/auth/login";
+    	}
+
         List<Room> rooms;
         
         if (search != null && !search.trim().isEmpty()) {
@@ -50,7 +57,12 @@ public class RoomController {
 
     // Show add room form
     @GetMapping("/add")
-    public String showAddRoomForm(Model model) {
+    public String showAddRoomForm(HttpSession session,Model model) {
+    	if (session.getAttribute("user") == null) {
+    	    return "redirect:/auth/login";
+    	}
+
+    	
         model.addAttribute("room", new Room());
         model.addAttribute("pageTitle", "Add New Room");
         model.addAttribute("userRole", "STAFF");
@@ -59,9 +71,13 @@ public class RoomController {
 
     // Create new room
     @PostMapping("/add")
-    public String createRoom(
+    public String createRoom(HttpSession session,
             @ModelAttribute Room room,
             RedirectAttributes redirectAttributes) {
+    	if (session.getAttribute("user") == null) {
+    	    return "redirect:/auth/login";
+    	}
+
         
         try {
             // TODO: Get current staff user ID from session
@@ -81,8 +97,12 @@ public class RoomController {
 
     // Show edit room form
     @GetMapping("/edit/{id}")
-    public String showEditRoomForm(@PathVariable Long id, Model model) {
-        Room room = roomService.getRoomById(id);
+    public String showEditRoomForm(HttpSession session,@PathVariable Long id, Model model) {
+    	if (session.getAttribute("user") == null) {
+    	    return "redirect:/auth/login";
+    	}
+
+    	Room room = roomService.getRoomById(id);
         model.addAttribute("room", room);
         model.addAttribute("pageTitle", "Edit Room");
         model.addAttribute("userRole", "STAFF");
@@ -91,13 +111,17 @@ public class RoomController {
 
     // Update room
     @PostMapping("/edit/{id}")
-    public String updateRoom(
+    public String updateRoom(HttpSession session,
             @PathVariable Long id,
             @RequestParam String name,
             @RequestParam String floor,
             @RequestParam Integer occupancy,
             @RequestParam String status,
             RedirectAttributes redirectAttributes) {
+    	if (session.getAttribute("user") == null) {
+    	    return "redirect:/auth/login";
+    	}
+
         
         try {
             Room existingRoom = roomService.getRoomById(id);
@@ -122,10 +146,14 @@ public class RoomController {
     // Update room status (AJAX endpoint)
     @PostMapping("/status/{id}")
     @ResponseBody
-    public String updateRoomStatus(
+    public String updateRoomStatus(HttpSession session,
             @PathVariable Long id,
             @RequestParam String status) {
         
+    	if (session.getAttribute("user") == null) {
+    	    return "redirect:/auth/login";
+    	}
+
         try {
             Room.RoomStatus newStatus = Room.RoomStatus.valueOf(status);
             roomService.updateRoomStatus(id, newStatus);
@@ -137,9 +165,13 @@ public class RoomController {
 
     // Delete room
     @GetMapping("/delete/{id}")
-    public String deleteRoom(
+    public String deleteRoom(HttpSession session,
             @PathVariable Long id,
             RedirectAttributes redirectAttributes) {
+    	if (session.getAttribute("user") == null) {
+    	    return "redirect:/auth/login";
+    	}
+
         
         try {
             Room room = roomService.getRoomById(id);
@@ -165,7 +197,11 @@ public class RoomController {
 
     // View room details
     @GetMapping("/view/{id}")
-    public String viewRoom(@PathVariable Long id, Model model) {
+    public String viewRoom(HttpSession session,@PathVariable Long id, Model model) {
+    	if (session.getAttribute("user") == null) {
+    	    return "redirect:/auth/login";
+    	}
+
         Room room = roomService.getRoomById(id);
         model.addAttribute("room", room);
         model.addAttribute("pageTitle", "Room Details");

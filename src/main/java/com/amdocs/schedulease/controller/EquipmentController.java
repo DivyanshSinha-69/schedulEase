@@ -4,6 +4,9 @@ import com.amdocs.schedulease.entity.EquipmentType;
 import com.amdocs.schedulease.exception.EquipmentNotFoundException;
 import com.amdocs.schedulease.entity.EquipmentStock;
 import com.amdocs.schedulease.service.EquipmentService;
+
+import jakarta.servlet.http.HttpSession;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -21,7 +24,12 @@ public class EquipmentController {
 
     // View all equipment stock
     @GetMapping
-    public String listEquipment(Model model) {
+    public String listEquipment(HttpSession session,Model model) {
+    	if (session.getAttribute("user") == null) {
+            return "redirect:/auth/login";
+        }
+
+    	
         List<EquipmentStock> equipmentStocks = equipmentService.getAllEquipmentStock();
         List<EquipmentType> equipmentTypes = equipmentService.getAllEquipmentTypes();
         
@@ -35,7 +43,10 @@ public class EquipmentController {
 
     // Show add equipment stock form
     @GetMapping("/add")
-    public String showAddEquipmentForm(Model model) {
+    public String showAddEquipmentForm(HttpSession session,Model model) {
+    	if (session.getAttribute("user") == null) {
+            return "redirect:/auth/login";
+        }
         List<EquipmentType> equipmentTypes = equipmentService.getAllEquipmentTypes();
         model.addAttribute("equipmentTypes", equipmentTypes);
         model.addAttribute("equipmentStock", new EquipmentStock());
@@ -46,11 +57,13 @@ public class EquipmentController {
 
     // Create equipment stock
     @PostMapping("/add")
-    public String createEquipmentStock(
+    public String createEquipmentStock(HttpSession session,
             @RequestParam Long equipmentTypeId,
             @RequestParam Integer totalQuantity,
             RedirectAttributes redirectAttributes) {
-        
+    	if (session.getAttribute("user") == null) {
+            return "redirect:/auth/login";
+        }
         try {
             EquipmentType equipmentType = equipmentService.getEquipmentTypeById(equipmentTypeId);
             
@@ -96,7 +109,10 @@ public class EquipmentController {
 
     // Show edit equipment stock form
     @GetMapping("/edit/{id}")
-    public String showEditEquipmentForm(@PathVariable Long id, Model model) {
+    public String showEditEquipmentForm(HttpSession session,@PathVariable Long id, Model model) {
+    	if (session.getAttribute("user") == null) {
+            return "redirect:/auth/login";
+        }
         EquipmentStock stock = equipmentService.getEquipmentStockById(id);
         model.addAttribute("equipmentStock", stock);
         model.addAttribute("pageTitle", "Edit Equipment Stock");
@@ -106,10 +122,13 @@ public class EquipmentController {
 
     // Update equipment stock
     @PostMapping("/edit/{id}")
-    public String updateEquipmentStock(
+    public String updateEquipmentStock(HttpSession session,
             @PathVariable Long id,
             @RequestParam Integer totalQuantity,
             RedirectAttributes redirectAttributes) {
+    	if (session.getAttribute("user") == null) {
+            return "redirect:/auth/login";
+        }
         
         try {
             EquipmentStock updatedStock = equipmentService.updateStockQuantity(id, totalQuantity);
@@ -128,9 +147,12 @@ public class EquipmentController {
     // Check equipment availability (AJAX)
     @GetMapping("/check-availability/{equipmentTypeId}")
     @ResponseBody
-    public String checkAvailability(
+    public String checkAvailability(HttpSession session,
             @PathVariable Long equipmentTypeId,
             @RequestParam Integer quantity) {
+    	if (session.getAttribute("user") == null) {
+            return "redirect:/auth/login";
+        }
         
         try {
             boolean isAvailable = equipmentService.isEquipmentAvailable(equipmentTypeId, quantity);
