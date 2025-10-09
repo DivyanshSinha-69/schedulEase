@@ -53,8 +53,8 @@
         <input type="hidden" name="rooms" th:value="${room.id}" th:each="room : ${selectedRooms}" />
         <input type="hidden" th:name="'equipment_' + ${equip.equipmentType.id}" th:value="${equip.quantity}" th:each="equip : ${selectedEquipments}" />
         <div class="flex justify-between mt-14">
-            <a href="/booking/create/step2" class="px-10 py-3 bg-gray-300 rounded-xl font-semibold shadow transition hover:bg-gray-400">← Back</a>
-            <a href="/booking/create" class="px-10 py-3 bg-red-600 text-white rounded-xl font-semibold shadow hover:bg-red-700">Cancel</a>
+            <a href="/booking/create" class="px-10 py-3 bg-gray-300 rounded-xl font-semibold shadow transition hover:bg-gray-400">← Back</a>
+            <a href="/user/dashboard" class="px-10 py-3 bg-red-600 text-white rounded-xl font-semibold shadow hover:bg-red-700">Cancel</a>
             <button type="submit" class="px-10 py-3 bg-green-600 text-white rounded-xl font-semibold shadow hover:bg-green-700">
                 CONFIRM BOOKING ✓
             </button>

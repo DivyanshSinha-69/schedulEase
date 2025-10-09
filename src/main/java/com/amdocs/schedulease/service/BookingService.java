@@ -6,8 +6,11 @@ import com.amdocs.schedulease.entity.EquipmentStock;
 import com.amdocs.schedulease.entity.EquipmentType;
 import com.amdocs.schedulease.entity.Room;
 import com.amdocs.schedulease.entity.UserAccount;
+import com.amdocs.schedulease.util.TimeSlot;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -60,4 +63,10 @@ public interface BookingService {
     	);
     
     Page<Booking> getPaginatedBookingsByUserId(Long userId, int page, int pageSize);
+    
+    public List<Room> getAvailableRoomsFiltered(
+            String date, String startTime, String endTime,
+            String floor, String occupancy, String sort);
+    
+    List<TimeSlot> getFreeSlotsForRoom(Room room, LocalDate date, LocalTime dayStart, LocalTime dayEnd);
 }

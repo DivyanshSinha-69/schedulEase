@@ -13,6 +13,8 @@ import com.amdocs.schedulease.repository.RoomRepository;
 import com.amdocs.schedulease.repository.EquipmentStockRepository;
 import com.amdocs.schedulease.repository.EquipmentTypeRepository;
 import com.amdocs.schedulease.service.BookingService;
+import com.amdocs.schedulease.util.RoomTimeline;
+import com.amdocs.schedulease.util.TimeSlot;
 import com.amdocs.schedulease.exception.BookingConflictException;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,8 +25,11 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -202,7 +207,106 @@ public class BookingServiceImpl implements BookingService {
         Pageable pageable = PageRequest.of(page, pageSize, Sort.by("startDatetime").descending());
         return bookingRepository.findByUserId(userId, pageable);
     }
+    
+    
+    
+    @Override
 
+    /**
+     * Returns a list of available rooms for the given date, time, and filters.
+     */
+    public List<Room> getAvailableRoomsFiltered(
+            String date, String startTime, String endTime,
+            String floor, String occupancy, String sort) {
 
+        // 1. Get all available rooms
+        List<Room> rooms = roomRepository.findByStatus(Room.RoomStatus.AVAILABLE);
+
+        // 2. Filter by floor
+        if (floor != null && !floor.isBlank()) {
+            rooms = rooms.stream()
+                    .filter(r -> r.getFloor().equalsIgnoreCase(floor))
+                    .collect(Collectors.toList());
+        }
+
+        // 3. Filter by occupancy
+        if (occupancy != null && !occupancy.isBlank()) {
+            int minCap = 0, maxCap = Integer.MAX_VALUE;
+            if (occupancy.equals("31+")) {
+                minCap = 31;
+            } else if (occupancy.contains("-")) {
+                String[] parts = occupancy.split("-");
+                minCap = Integer.parseInt(parts[0]);
+                maxCap = Integer.parseInt(parts[1]);
+            }
+            final int min = minCap, max = maxCap;
+            rooms = rooms.stream()
+                    .filter(r -> r.getOccupancy() >= min && r.getOccupancy() <= max)
+                    .collect(Collectors.toList());
+        }
+
+        // 4. Filter by date/time availability
+        if (date != null && !date.isBlank() && startTime != null && !startTime.isBlank() && endTime != null && !endTime.isBlank() ){
+            LocalDate bookingDate = LocalDate.parse(date);
+            LocalTime start = LocalTime.parse(startTime);
+            LocalTime end = LocalTime.parse(endTime);
+            LocalDateTime startDateTime = LocalDateTime.of(bookingDate, start);
+            LocalDateTime endDateTime = LocalDateTime.of(bookingDate, end);
+
+            List<Long> roomIds = rooms.stream().map(Room::getId).toList();
+            List<Booking> conflicts = bookingRepository.findOverlappingBookings(roomIds, startDateTime, endDateTime);
+            Set<Long> conflictedRoomIds = conflicts.stream()
+                    .flatMap(b -> b.getRooms().stream())
+                    .map(Room::getId)
+                    .collect(Collectors.toSet());
+
+            rooms = rooms.stream()
+                    .filter(r -> !conflictedRoomIds.contains(r.getId()))
+                    .collect(Collectors.toList());
+        }
+
+        // 5. Sort
+        if (sort != null) {
+            switch (sort) {
+                case "name":
+                    rooms.sort(Comparator.comparing(Room::getName));
+                    break;
+                case "occupancy":
+                    rooms.sort(Comparator.comparing(Room::getOccupancy).reversed());
+                    break;
+                case "floor":
+                    rooms.sort(Comparator.comparing(Room::getFloor));
+                    break;
+            }
+        }
+
+        return rooms;
+    }
+    
+    
+    @Override
+    public List<TimeSlot> getFreeSlotsForRoom(Room room, LocalDate date, LocalTime dayStartTime, LocalTime dayEndTime) {
+    	LocalDateTime dayStart = date.atStartOfDay();
+    	LocalDateTime dayEnd = date.atTime(LocalTime.of(23,59)); 
+
+    	List<Booking> bookings = bookingRepository.findBookingsByRoomAndTimeRange(room.getId(),dayStart, dayEnd);
+        bookings.sort(Comparator.comparing(b -> b.getStartDatetime().toLocalTime()));
+
+        List<TimeSlot> freeSlots = new ArrayList<>();
+        LocalTime lastEnd = dayStartTime;
+        for (Booking b : bookings) {
+            LocalTime bookingStart = b.getStartDatetime().toLocalTime();
+            if (lastEnd.isBefore(bookingStart)) {
+                freeSlots.add(new TimeSlot(lastEnd, bookingStart));
+            }
+            lastEnd = b.getEndDatetime().toLocalTime();
+        }
+        if (lastEnd.isBefore(dayEndTime)) {
+            freeSlots.add(new TimeSlot(lastEnd, dayEndTime));
+        }
+        return freeSlots;
+    }
+
+  
 
 }

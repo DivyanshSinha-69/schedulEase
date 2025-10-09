@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Booking Step 1 & 2 - schedulEase</title>
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet" />
+	<style>
+		body {
+			background: #f3f4f6;
+			font-family: "Montserrat", "Segoe UI", Arial, sans-serif;
+		}
+
+		.main-card {
+			background: #fff;
+			border-radius: 1.5rem;
+			box-shadow: 0 4px 20px 0 #0002;
+			max-width: 900px;
+			margin: 32px auto;
+			padding: 44px 36px;
+		}
+
+		.equip-btn {
+			width: 40px;
+			height: 40px;
+			border: 1px solid #d1d5db;
+			border-radius: 0.375rem;
+			background: #f9fafb;
+			font-size: 1.5rem;
+			font-weight: 600;
+			cursor: pointer;
+			transition: background .18s;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.equip-btn:hover {
+			background: #e5e7eb;
+		}
+
+		input[type=number]::-webkit-inner-spin-button,
+		input[type=number]::-webkit-outer-spin-button {
+			-webkit-appearance: none !important;
+			margin: 0;
+		}
+
+		input[type=number] {
+			-moz-appearance: textfield;
+		}
+
+		#roomsList {
+			max-height: 230px;
+			overflow-y: auto;
+		}
+
+		.room-row {
+			transition: background .14s;
+		}
+
+		.room-row:hover {
+			background: #f3f4f6;
+		}
+
+		.badge-small {
+			background: #fee2e2 !important;
+			color: #b91c1c;
+		}
+
+		.badge-medium {
+			background: #fef3c7 !important;
+			color: #b45309;
+		}
+
+		.badge-spacious {
+			background: #dcfce7 !important;
+			color: #15803d;
+		}
+
+		@media (max-width:650px) {
+			.main-card {
+				padding: 20px 6px;
+			}
+		}
+	</style>
+</head>
+
+<body>
+	<div class="main-card">
+		<h2 class="fw-bold mb-4" style="font-size:2rem;">Step 1: Select Resources</h2>
+		<form id="mainForm" th:action="@{/booking/create}" method="post">
+			<!-- Date Picker Step - Always Visible -->
+			<div class="row g-3 align-items-end mb-4">
+				<div class="col-md-4">
+					<label class="form-label fw-semibold" for="datePicker">Date *</label>
+					<input type="date" id="datePicker" name="startDate" class="form-control" th:value="${selectedDate}"
+						required />
+				</div>
+				<div class="col-md-8 d-flex align-items-end">
+					<span class="text-muted ms-4" th:if="${selectedDate == null or selectedDate == ''}">Select a date to
+						continue booking.</span>
+				</div>
+			</div>
+
+			<!-- Filters, Room List, Times, Equipment - Visible Only After Date Chosen -->
+			<div th:if="${selectedDate != null and selectedDate != ''}">
+				<div class="row g-3 align-items-end">
+					<div class="col-md-3">
+						<label class="form-label fw-semibold" for="floorFilter">By Floor</label>
+						<select id="floorFilter" name="floor" class="form-select">
+							<option value="">Any</option>
+							<option th:each="floor : ${floors}" th:value="${floor}" th:text="${floor}"
+								th:selected="${selectedFloor == floor}"></option>
+						</select>
+					</div>
+					<div class="col-md-3">
+						<label class="form-label fw-semibold" for="capacityFilter">By Capacity</label>
+						<select id="capacityFilter" name="occupancy" class="form-select">
+							<option value="" th:selected="${selectedOccupancy == null or selectedOccupancy == ''}">Any
+							</option>
+							<option value="1-10" th:selected="${selectedOccupancy=='1-10'}">1-10</option>
+							<option value="11-20" th:selected="${selectedOccupancy=='11-20'}">11-20</option>
+							<option value="21-30" th:selected="${selectedOccupancy=='21-30'}">21-30</option>
+							<option value="31+" th:selected="${selectedOccupancy=='31+'}">31+</option>
+						</select>
+					</div>
+					<div class="col-md-2">
+						<label class="form-label fw-semibold" for="sortRooms">Sort By</label>
+						<select id="sortRooms" name="sort" class="form-select">
+							<option value="name" th:selected="${selectedSort=='name'}">Name</option>
+							<option value="occupancy" th:selected="${selectedSort=='occupancy'}">Occupancy</option>
+							<option value="floor" th:selected="${selectedSort=='floor'}">Floor</option>
+						</select>
+					</div>
+					<div class="col-md-1 d-grid">
+						<button type="reset" id="clearFilters" class="btn btn-secondary w-100 mb-1">Clear</button>
+					</div>
+				</div>
+
+				<!-- Time Selection -->
+				<div class="row g-3 mb-4 mt-2">
+					<div class="col-md-6">
+						<label class="form-label fw-semibold" for="startTime">Start Time *</label>
+						<input type="time" id="startTime" name="startTime" class="form-control"
+							th:value="${selectedStartTime}" required />
+					</div>
+					<div class="col-md-6">
+						<label class="form-label fw-semibold" for="endTime">End Time *</label>
+						<input type="time" id="endTime" name="endTime" class="form-control"
+							th:value="${selectedEndTime}" required />
+					</div>
+				</div>
+
+				<!-- Room List -->
+				<label class="fw-semibold mt-4 mb-2" style="font-size:1.1rem;">Select Rooms: *</label>
+				<div id="roomsList" class="bg-light border rounded-3 p-3 mb-4">
+					<label th:each="room : ${availableRooms}"
+						class="room-row d-flex flex-column py-2 px-3 rounded cursor-pointer">
+						<div class="d-flex align-items-center gap-3">
+							<input type="checkbox" name="rooms" th:value="${room.id}" class="form-check-input"
+								th:checked="${selectedRoomIds != null and selectedRoomIds.contains(room.id)}" />
+							<span class="flex-grow-1"
+								th:text="${room.name + ' - Floor ' + room.floor + ' - Capacity: ' + room.occupancy}"></span>
+							<span class="badge rounded-pill px-2 py-1 text-uppercase small"
+								th:classappend="${room.occupancy > 25} ? ' badge-spacious' : (${room.occupancy > 15} ? ' badge-medium' : ' badge-small')"
+								th:text="${room.occupancy > 25} ? 'Spacious' : (${room.occupancy > 15} ? 'Medium' : 'Small')"></span>
+						</div>
+						<!-- Free slots timeline below room name -->
+						<div class="mt-2">
+							<span th:each="timeline : ${roomTimelines}" th:if="${timeline.id == room.id}">
+								<span th:each="slot : ${timeline.freeSlots}">
+									<span class="badge bg-success me-1"
+										th:text="${slot.start} + ' - ' + ${slot.end}"></span>
+								</span>
+							</span>
+						</div>
+					</label>
+				</div>
+
+
+
+				<!-- Equipment Selection -->
+				<label class=" fw-semibold mb-3" style="font-size:1.1rem;">Select Equipment:</label>
+				<div class="row g-4 mb-4">
+					<div th:each="equip : ${availableEquipments}"
+						class="col-md-4 d-flex flex-column align-items-center bg-light border rounded-3 py-3 px-2">
+						<span class="fw-bold mb-1 text-uppercase" th:text="${equip.equipmentType.name + ':'}"></span>
+						<div class="input-group" style="width:140px;">
+							<button type="button" class="btn btn-outline-secondary px-2 py-0 equip-btn"
+								th:onclick="|decrementEquipment(${equip.equipmentType.id}, ${equip.totalQuantity - equip.allocatedQuantity});|">
+								−
+							</button>
+
+							<input type="number" th:name="'equipment_' + ${equip.equipmentType.id}" th:value="0" min="0"
+								th:max="${equip.totalQuantity - equip.allocatedQuantity}"
+								class="form-control text-center equipment-count"
+								th:id="'equip_' + ${equip.equipmentType.id}" oninput="enforceMax(this)" />
+
+
+							<button type="button" class="btn btn-outline-secondary px-2 py-0 equip-btn"
+								th:onclick="|incrementEquipment(${equip.equipmentType.id}, ${equip.totalQuantity - equip.allocatedQuantity});|">
+								+
+							</button>
+						</div>
+
+						<small class="text-secondary mt-1"
+							th:text="'(' + (${equip.totalQuantity - equip.allocatedQuantity}) + ' available)'"></small>
+					</div>
+				</div>
+			</div>
+
+			<div th:if="${selectedDate != null and selectedDate != ''}" class="d-flex justify-content-between mt-4">
+				<a href="/user/dashboard" class="btn btn-secondary px-5 py-3 fw-semibold shadow-sm">Cancel</a>
+
+				<button type="submit" onclick="submitBooking()" class="btn btn-primary px-5 py-3 fw-semibold shadow">
+					Next: Confirm →
+				</button>
+
+
+			</div>
+		</form>
+
+
+	</div>
+
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			['datePicker', 'floorFilter', 'capacityFilter', 'sortRooms'].forEach(function (id) {
+				var el = document.getElementById(id);
+				if (el) {
+					el.addEventListener('change', function () {document.getElementById("mainForm").submit();});
+				}
+			});
+
+			//datepicker validation
+			var today = new Date();
+			var yyyy = today.getFullYear();
+			var mm = String(today.getMonth() + 1).padStart(2, '0');
+			var dd = String(today.getDate()).padStart(2, '0');
+			var minDate = yyyy + '-' + mm + '-' + dd;
+			document.getElementById('datePicker').setAttribute('min', minDate);
+
+
+		});
+
+		document.getElementById('clearFilters').addEventListener('click', function () {
+			// Reset values
+			document.getElementById('floorFilter').value = "";
+			document.getElementById('capacityFilter').value = "";
+			document.getElementById('sortRooms').value = "name"; // or your default
+
+			// Submit form
+			document.getElementById('mainForm').submit();;
+		});
+
+		function incrementEquipment(equipId, max) {
+			let input = document.getElementById('equip_' + equipId);
+			let val = parseInt(input.value || '0', 10);
+			if (val < max) input.value = val + 1;
+		}
+		function decrementEquipment(equipId, max) {
+			let input = document.getElementById('equip_' + equipId);
+			let val = parseInt(input.value || '0', 10);
+			if (val > 0) input.value = val - 1;
+		}
+
+		function enforceMax(input) {
+			const max = parseInt(input.max);
+			const value = parseInt(input.value);
+
+			if (value > max) {
+				input.value = max;
+			}
+			if (value < 0) {
+				input.value = 0;
+			}
+		}
+
+		document.addEventListener('DOMContentLoaded', function () {
+			var startTimeInput = document.getElementById('startTime');
+			var endTimeInput = document.getElementById('endTime');
+			var form = startTimeInput.form;
+
+			function checkAndSubmit() {
+				if (startTimeInput.value && endTimeInput.value) {
+					form.submit();
+				}
+			}
+
+			startTimeInput.addEventListener('change', checkAndSubmit);
+			endTimeInput.addEventListener('change', checkAndSubmit);
+		});
+
+
+		function submitBooking() {
+			const form = document.getElementById('mainForm');
+			form.action = '/booking/confirm';
+			form.method = 'get';
+			form.submit();
+		}
+
+
+	</script>
+</body>
+
+</html>
