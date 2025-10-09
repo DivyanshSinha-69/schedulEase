@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle}">Add New Room</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link th:href="@{/css/style.css}" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <div th:replace="~{fragments/header :: header}"></div>
+    
+    <!-- Navigation -->
+    <div th:replace="~{fragments/navbar-staff :: navbar}"></div>
+    
+    <!-- Main Content -->
+    <main class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0">
+                            <i class="bi bi-plus-circle"></i> Add New Room
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <form th:action="@{/staff/rooms/add}" method="post" th:object="${room}">
+                            <!-- Room Name -->
+                            <div class="mb-3">
+                                <label for="name" class="form-label">
+                                    Room Name <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="name" 
+                                       th:field="*{name}"
+                                       placeholder="e.g., Conference Room A"
+                                       required>
+                                <div class="form-text">Enter a unique name for the room</div>
+                            </div>
+                            
+                            <!-- Floor -->
+                            <div class="mb-3">
+                                <label for="floor" class="form-label">
+                                    Floor <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="floor" 
+                                       th:field="*{floor}"
+                                       placeholder="e.g., 1st Floor, Ground Floor"
+                                       required>
+                                <div class="form-text">Specify which floor the room is located on</div>
+                            </div>
+                            
+                            <!-- Occupancy -->
+                            <div class="mb-3">
+                                <label for="occupancy" class="form-label">
+                                    Capacity (Number of People) <span class="text-danger">*</span>
+                                </label>
+                                <input type="number" 
+                                       class="form-control" 
+                                       id="occupancy" 
+                                       th:field="*{occupancy}"
+                                       placeholder="e.g., 20"
+                                       min="1"
+                                       max="500"
+                                       required>
+                                <div class="form-text">Maximum number of people the room can accommodate</div>
+                            </div>
+                            
+                            <!-- Buttons -->
+                            <div class="d-flex justify-content-between">
+                                <a th:href="@{/staff/rooms}" class="btn btn-secondary">
+                                    <i class="bi bi-arrow-left"></i> Cancel
+                                </a>
+                                <button type="submit" class="btn btn-success">
+                                    <i class="bi bi-check-circle"></i> Create Room
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Footer -->
+    <div th:replace="~{fragments/footer :: footer}"></div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/main.js}"></script>
+</body>
+</html>
