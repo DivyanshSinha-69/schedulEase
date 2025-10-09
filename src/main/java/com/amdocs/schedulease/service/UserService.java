@@ -5,6 +5,8 @@ import com.amdocs.schedulease.entity.UserAccount;
 
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
+
 public interface UserService {
     
     /**
@@ -55,4 +57,7 @@ public interface UserService {
      * @return true if user has the role
      */
     boolean hasRole(Long userId, Role.RoleName roleName);
+
+
+	String getUserFullName(Long userId);
 }

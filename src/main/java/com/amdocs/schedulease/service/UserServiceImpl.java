@@ -68,4 +68,9 @@ public class UserServiceImpl implements UserService {
         Set<Role> roles = getUserRoles(userId);
         return roles.stream().anyMatch(role -> role.getName() == roleName);
     }
+    
+    @Override
+    public String getUserFullName(Long userId) {
+    	return userAccountRepository.findUserFullNameById(userId);
+    }
 }

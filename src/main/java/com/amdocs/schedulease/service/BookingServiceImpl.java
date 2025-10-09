@@ -16,6 +16,10 @@ import com.amdocs.schedulease.service.BookingService;
 import com.amdocs.schedulease.exception.BookingConflictException;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -190,6 +194,13 @@ public class BookingServiceImpl implements BookingService {
         booking = bookingRepository.save(booking);
 
         return booking;
+    }
+    
+    
+    @Override
+    public Page<Booking> getPaginatedBookingsByUserId(Long userId, int page, int pageSize) {
+        Pageable pageable = PageRequest.of(page, pageSize, Sort.by("startDatetime").descending());
+        return bookingRepository.findByUserId(userId, pageable);
     }
 
 

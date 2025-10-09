@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.springframework.data.domain.Page;
+
 public interface BookingService {
     
     // Create a new booking
@@ -56,4 +58,6 @@ public interface BookingService {
     	    LocalDateTime endDateTime,
     	    String purposeNotes
     	);
+    
+    Page<Booking> getPaginatedBookingsByUserId(Long userId, int page, int pageSize);
 }
