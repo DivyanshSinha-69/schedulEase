@@ -29,8 +29,11 @@ public class BookingEquipment {
         this.booking = booking;
         this.equipmentType = equipmentType;
         this.quantity = quantity;
-        this.id = new BookingEquipmentId(booking.getId(), equipmentType.getId());
+        if (booking.getId() != null && equipmentType.getId() != null) {
+            this.id = new BookingEquipmentId(booking.getId(), equipmentType.getId());
+        }
     }
+
 
     // Getters and Setters
     public BookingEquipmentId getId() {

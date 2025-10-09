@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Booking Details - SchedulEase</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h2 {
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .booking-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        .info-row {
+            display: flex;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #495057;
+            min-width: 140px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .info-value {
+            color: #212529;
+            flex: 1;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-confirmed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-cancelled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .rooms-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        .room-tag {
+            background: #667eea;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .equipment-list {
+            list-style: none;
+            margin-top: 10px;
+        }
+
+        .equipment-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .equipment-name {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .equipment-quantity {
+            background: #667eea;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .error-container {
+            background: #f8d7da;
+            border: 2px solid #f5c6cb;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .error-message {
+            color: #721c24;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .icon {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #495057;
+            margin: 25px 0 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .back-button {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .back-button:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>📋 Booking Details</h2>
+            <p>View your booking information</p>
+        </div>
+
+        <div class="content">
+            <div th:if="${booking}">
+                <div class="booking-card">
+                    <div class="info-row">
+                        <div class="info-label">
+                            <span>🆔</span> Booking ID
+                        </div>
+                        <div class="info-value">
+                            <strong th:text="${booking.id}"></strong>
+                        </div>
+                    </div>
+
+                    <div class="info-row">
+                        <div class="info-label">
+                            <span>📊</span> Status
+                        </div>
+                        <div class="info-value">
+                            <span class="status-badge" 
+                                  th:classappend="${booking.status == 'PENDING' ? 'status-pending' : (booking.status == 'CONFIRMED' ? 'status-confirmed' : 'status-cancelled')}"
+                                  th:text="${booking.status}">
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="info-row">
+                        <div class="info-label">
+                            <span>🕐</span> Start Time
+                        </div>
+                        <div class="info-value">
+                            <span th:text="${#temporals.format(booking.startDatetime, 'dd MMM yyyy, hh:mm a')}"></span>
+                        </div>
+                    </div>
+
+                    <div class="info-row">
+                        <div class="info-label">
+                            <span>🕑</span> End Time
+                        </div>
+                        <div class="info-value">
+                            <span th:text="${#temporals.format(booking.endDatetime, 'dd MMM yyyy, hh:mm a')}"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-title">
+                    <span>🏢</span> Booked Rooms
+                </div>
+                <div class="rooms-list">
+                    <span class="room-tag" th:each="room : ${booking.rooms}" th:text="${room.name}"></span>
+                </div>
+
+                <div class="section-title">
+                    <span>🖥️</span> Equipment Allocated
+                </div>
+                <ul class="equipment-list">
+                    <li class="equipment-item" th:each="equip : ${booking.equipmentAllocations}">
+                        <span class="equipment-name" th:text="${equip.equipmentType.name}"></span>
+                        <span class="equipment-quantity" th:text="${equip.quantity} + ' units'"></span>
+                    </li>
+                </ul>
+
+                <div style="text-align: center;">
+                    <a href="/booking/my-bookings" class="back-button">← Go Back</a>
+                </div>
+            </div>
+
+            <div th:if="${error}" class="error-container">
+                <p class="error-message" th:text="${error}"></p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
