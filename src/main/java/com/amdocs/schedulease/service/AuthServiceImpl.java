@@ -11,6 +11,12 @@ import com.amdocs.schedulease.repository.UserAccountRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.amdocs.schedulease.entity.PasswordResetOtp;
+import com.amdocs.schedulease.repository.PasswordResetOtpRepository;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import java.util.Random;
+import java.util.Optional;
 
 import java.time.LocalDateTime;
 
@@ -22,6 +28,12 @@ public class AuthServiceImpl implements AuthService {
 
     @Autowired
     private RoleRepository roleRepository;
+    
+    @Autowired
+    private PasswordResetOtpRepository otpRepository;
+
+    @Autowired
+    private JavaMailSender mailSender;
 
     @Override
     @Transactional
@@ -101,4 +113,80 @@ public class AuthServiceImpl implements AuthService {
             return false;
         }
     }
+    
+    @Override
+    @Transactional
+    public void initiateForgotPassword(String email) {
+        // Verify user exists
+        UserAccount user = userAccountRepository.findByEmail(email)
+            .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
+        
+        // Delete any existing OTPs for this email
+        otpRepository.deleteByEmail(email);
+        
+        // Generate 6-digit OTP
+        String otp = String.format("%06d", new Random().nextInt(999999));
+        
+        // Create OTP record with 10 minutes expiry
+        PasswordResetOtp resetOtp = new PasswordResetOtp(
+            email,
+            otp,
+            LocalDateTime.now().plusMinutes(10)
+        );
+        
+        otpRepository.save(resetOtp);
+        
+        // Send OTP via email
+        sendOtpEmail(email, otp, user.getFullName());
+    }
+
+    private void sendOtpEmail(String email, String otp, String fullName) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(email);
+        message.setSubject("Forgot Password OTP - schedulEase");
+        message.setText("Hello " + fullName + ",\n\n" +
+                        "Your password reset OTP is: " + otp + "\n\n" +
+                        "This OTP is valid for 10 minutes only.\n" +
+                        "Do not share this OTP with anyone.\n\n" +
+                        "If you did not request this, please ignore this email.\n\n" +
+                        "Best regards,\n" +
+                        "schedulEase Team");
+        
+        mailSender.send(message);
+    }
+
+    @Override
+    public boolean validateOtp(String email, String otp) {
+        // Find OTP record
+        Optional<PasswordResetOtp> otpRecordOpt = otpRepository.findByEmailAndOtpAndIsUsedFalse(email, otp);
+        
+        if (otpRecordOpt.isEmpty()) {
+            return false;
+        }
+        
+        PasswordResetOtp otpRecord = otpRecordOpt.get();
+        
+        // Check if expired
+        if (otpRecord.getExpiryTime().isBefore(LocalDateTime.now())) {
+            return false;
+        }
+        
+        return true;
+    }
+
+    @Override
+    @Transactional
+    public void resetPasswordWithOtp(String email, String newPassword) {
+        // Verify user exists
+        UserAccount user = userAccountRepository.findByEmail(email)
+            .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
+        
+        // Update password using existing hashing method
+        user.setPasswordHash(hashPassword(newPassword));
+        userAccountRepository.save(user);
+        
+        // Delete all OTPs for this email
+        otpRepository.deleteByEmail(email);
+    }
+
 }

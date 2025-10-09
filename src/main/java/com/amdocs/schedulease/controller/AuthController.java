@@ -139,4 +139,122 @@ public class AuthController {
     public String showPasswordResetSuccess(Model model) {
         return "auth/password-reset-success";
     }
+    
+ // ========== FORGOT PASSWORD (OTP-based) ==========
+
+    @GetMapping("/forgot-password")
+    public String showForgotPasswordForm(Model model) {
+        return "auth/forgot-password";
+    }
+
+    @PostMapping("/forgot-password")
+    public String requestForgotPassword(
+            @RequestParam("email") String email,
+            RedirectAttributes redirectAttributes,
+            Model model) {
+
+        try {
+            // Check if email exists
+            if (!authService.emailExists(email)) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Email not found");
+                return "redirect:/auth/forgot-password";
+            }
+
+            // Send OTP
+            authService.initiateForgotPassword(email);
+            
+            // Show OTP verification page
+            model.addAttribute("email", email);
+            return "auth/verify-otp";
+
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Failed to send OTP. Please try again.");
+            return "redirect:/auth/forgot-password";
+        }
+    }
+
+    @GetMapping("/verify-otp")
+    public String showVerifyOtpForm(@RequestParam(required = false) String email, Model model) {
+        model.addAttribute("email", email);
+        return "auth/verify-otp";
+    }
+
+    @PostMapping("/verify-otp")
+    public String verifyOtp(
+            @RequestParam("email") String email,
+            @RequestParam("otp") String otp,
+            HttpSession session,
+            RedirectAttributes redirectAttributes,
+            Model model) {
+
+        try {
+            boolean valid = authService.validateOtp(email, otp);
+            
+            if (valid) {
+                // Store email in session for password reset
+                session.setAttribute("forgotPasswordEmail", email);
+                return "redirect:/auth/set-new-password";
+            } else {
+                model.addAttribute("errorMessage", "Invalid or expired OTP");
+                model.addAttribute("email", email);
+                return "auth/verify-otp";
+            }
+            
+        } catch (Exception e) {
+            model.addAttribute("errorMessage", e.getMessage());
+            model.addAttribute("email", email);
+            return "auth/verify-otp";
+        }
+    }
+
+    @GetMapping("/set-new-password")
+    public String showSetNewPasswordForm(HttpSession session, RedirectAttributes redirectAttributes) {
+        // Check if user verified OTP
+        if (session.getAttribute("forgotPasswordEmail") == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Please verify OTP first");
+            return "redirect:/auth/forgot-password";
+        }
+        return "auth/new-password";
+    }
+
+    @PostMapping("/set-new-password")
+    public String setNewPassword(
+            @RequestParam("newPassword") String newPassword,
+            @RequestParam("confirmPassword") String confirmPassword,
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
+
+        String email = (String) session.getAttribute("forgotPasswordEmail");
+        
+        if (email == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Session expired. Please try again.");
+            return "redirect:/auth/forgot-password";
+        }
+
+        // Validate passwords match
+        if (!newPassword.equals(confirmPassword)) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Passwords do not match");
+            return "redirect:/auth/set-new-password";
+        }
+
+        // Validate password strength
+        if (newPassword.length() < 8) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Password must be at least 8 characters long");
+            return "redirect:/auth/set-new-password";
+        }
+
+        try {
+            authService.resetPasswordWithOtp(email, newPassword);
+            session.removeAttribute("forgotPasswordEmail");
+            
+            redirectAttributes.addFlashAttribute("successMessage", 
+                "Password reset successful! Please login with your new password.");
+            return "redirect:/auth/login";
+            
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/auth/set-new-password";
+        }
+    }
+
 }
