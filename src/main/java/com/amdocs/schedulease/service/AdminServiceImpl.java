@@ -12,9 +12,11 @@ import com.amdocs.schedulease.repository.StaffProfileRepository;
 import com.amdocs.schedulease.repository.UserAccountRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -32,6 +34,9 @@ public class AdminServiceImpl implements AdminService {
 
     @Autowired
     private AuthService authService;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;  // ADD THIS
 
     @Override
     public List<UserAccount> getPendingUsers() {
@@ -71,7 +76,6 @@ public class AdminServiceImpl implements AdminService {
                 throw new UserApprovalException("User is not in PENDING status");
             }
 
-            // For now, we'll delete the user. In production, you might want to keep a record
             userAccountRepository.delete(user);
 
         } catch (Exception e) {
@@ -110,14 +114,13 @@ public class AdminServiceImpl implements AdminService {
     @Override
     @Transactional
     public UserAccount createStaffAccount(String email, String password, String fullName, 
-                                         String phone, String department) {
+                                         String phone, String department, LocalDate dob) {
         try {
-            // Check if email already exists
             if (authService.emailExists(email)) {
                 throw new UserAlreadyExistsException("Email already registered: " + email);
             }
 
-            // Create user account
+            // 1) Create and save user account
             UserAccount user = new UserAccount();
             user.setEmail(email);
             user.setPasswordHash(authService.hashPassword(password));
@@ -126,28 +129,28 @@ public class AdminServiceImpl implements AdminService {
             user.setStatus(UserAccount.Status.ACTIVE);
             user.setCreatedAt(LocalDateTime.now());
             user.setApprovedAt(LocalDateTime.now());
+            
+            UserAccount savedUser = userAccountRepository.saveAndFlush(user);
 
-            // Save user
-            UserAccount savedUser = userAccountRepository.save(user);
-
-            // Assign STAFF role
+            // 2) Assign STAFF role
             Role staffRole = roleRepository.findAll().stream()
                     .filter(r -> r.getName() == Role.RoleName.STAFF)
                     .findFirst()
-                    .orElseGet(() -> {
-                        Role newRole = new Role(Role.RoleName.STAFF);
-                        return roleRepository.save(newRole);
-                    });
+                    .orElseGet(() -> roleRepository.save(new Role(Role.RoleName.STAFF)));
 
             savedUser.getRoles().add(staffRole);
-            savedUser = userAccountRepository.save(savedUser);
+            savedUser = userAccountRepository.saveAndFlush(savedUser);
 
-            // Create staff profile
-            StaffProfile staffProfile = new StaffProfile();
-            staffProfile.setUserAccount(savedUser);
-            staffProfile.setDepartment(department);
-            staffProfile.setCreatedAt(LocalDateTime.now());
-            staffProfileRepository.save(staffProfile);
+            // 3) Insert staff_profile using native SQL (bypasses @MapsId complexity)
+            String sql = "INSERT INTO staff_profile (id, department, dob, created_at, version) " +
+                         "VALUES (?, ?, ?, ?, 0)";
+            
+            jdbcTemplate.update(sql, 
+                savedUser.getId(),          // id (same as user_account.id)
+                department,                 // department
+                dob,                       // dob
+                LocalDateTime.now()        // created_at
+            );
 
             return savedUser;
 
@@ -155,7 +158,6 @@ public class AdminServiceImpl implements AdminService {
             throw new StaffCreationException("Failed to create staff account: " + e.getMessage(), e);
         }
     }
-
 
     @Override
     @Transactional

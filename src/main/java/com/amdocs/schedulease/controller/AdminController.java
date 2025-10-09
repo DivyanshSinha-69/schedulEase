@@ -153,6 +153,7 @@ public class AdminController {
             @RequestParam("fullName") String fullName,
             @RequestParam("phone") String phone,
             @RequestParam("department") String department,
+            @RequestParam("dob") String dob,  // NEW
             RedirectAttributes redirectAttributes) {
 
         // Validate passwords match
@@ -168,14 +169,27 @@ public class AdminController {
         }
 
         try {
-            adminService.createStaffAccount(email, password, fullName, phone, department);
+            // Parse and validate DOB
+            java.time.LocalDate parsedDob = java.time.LocalDate.parse(dob);
+            
+            // Validate DOB is not in future
+            if (parsedDob.isAfter(java.time.LocalDate.now())) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Date of Birth cannot be in the future");
+                return "redirect:/admin/staff-management";
+            }
+
+            // Call service with DOB
+            adminService.createStaffAccount(email, password, fullName, phone, department, parsedDob);
             redirectAttributes.addFlashAttribute("successMessage", "Staff account created successfully");
+        } catch (java.time.format.DateTimeParseException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Invalid date format");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
 
         return "redirect:/admin/staff-management";
     }
+
 
     // ========== ROLE MANAGEMENT ==========
 
