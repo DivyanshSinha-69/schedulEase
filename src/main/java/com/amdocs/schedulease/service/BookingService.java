@@ -58,6 +58,9 @@ public interface BookingService {
     
     List<BookingEquipment> getEquipmentFromParams(Map<String, String> allParams);
     
+    List<Booking> getUserBookings(Long userId);  // ADD THIS LINE
+
+    
     Booking createBookingWithAllocations(
     	    UserAccount userAccount,
     	    Set<Room> selectedRooms,

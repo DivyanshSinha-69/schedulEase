@@ -12,10 +12,8 @@ import com.amdocs.schedulease.repository.BookingRepository;
 import com.amdocs.schedulease.repository.RoomRepository;
 import com.amdocs.schedulease.repository.EquipmentStockRepository;
 import com.amdocs.schedulease.repository.EquipmentTypeRepository;
-import com.amdocs.schedulease.service.BookingService;
-import com.amdocs.schedulease.util.RoomTimeline;
-import com.amdocs.schedulease.util.TimeSlot;
 import com.amdocs.schedulease.exception.BookingConflictException;
+import com.amdocs.schedulease.util.TimeSlot;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -85,14 +83,24 @@ public class BookingServiceImpl implements BookingService {
     public Booking cancelBooking(Long bookingId, String cancelReason) {
         Booking booking = getBookingById(bookingId);
         if (booking == null) return null;
-        if (booking.getStatus() != Booking.BookingStatus.CONFIRMED) {
-            throw new IllegalStateException(
-                "Only CONFIRMED bookings can be cancelled. Current status: " + booking.getStatus());
+        
+        // Check if booking is already cancelled
+        if (booking.getStatus() == Booking.BookingStatus.CANCELLED) {
+            throw new IllegalStateException("Booking is already cancelled");
         }
+        
+        // Users can cancel PENDING or CONFIRMED bookings
+        if (booking.getStatus() != Booking.BookingStatus.PENDING && 
+            booking.getStatus() != Booking.BookingStatus.CONFIRMED) {
+            throw new IllegalStateException(
+                "Cannot cancel booking with status: " + booking.getStatus());
+        }
+        
         booking.setStatus(Booking.BookingStatus.CANCELLED);
         booking.setCancelReason(cancelReason);
         booking.setCancelledAt(LocalDateTime.now());
         booking.setUpdatedAt(LocalDateTime.now());
+        
         return bookingRepository.save(booking);
     }
 
@@ -112,34 +120,29 @@ public class BookingServiceImpl implements BookingService {
         return bookingRepository.findAll();
     }
 
-    // NEW: Get all available rooms
     @Override
     public List<Room> getAllAvailableRooms() {
         return roomRepository.findByStatus(RoomStatus.AVAILABLE);
     }
 
-    // NEW: Get all available equipment
     @Override
     public List<EquipmentStock> getAllAvailableEquipment() {
         return equipmentStockRepository.findAllAvailableEquipment();
     }
 
-        
-    
-
-    // NEW: Get unique room floors for filter dropdown
     @Override
     public List<String> getUniqueRoomFloors() {
         return roomRepository.findDistinctAvailableFloors();
     }
     
     @Override
-    public List<Room> getRoomsByIds(List<Long> roomIds){
-    	return roomRepository.findAllById(roomIds);    }
+    public List<Room> getRoomsByIds(List<Long> roomIds) {
+        return roomRepository.findAllById(roomIds);
+    }
     
     @Override
     public List<BookingEquipment> getEquipmentFromParams(Map<String, String> allParams) {
-        List<BookingEquipment> equipmentList = new ArrayList<BookingEquipment>();
+        List<BookingEquipment> equipmentList = new ArrayList<>();
         for (Map.Entry<String, String> entry : allParams.entrySet()) {
             String key = entry.getKey();
             if (key.startsWith("equipment_")) {
@@ -148,7 +151,6 @@ public class BookingServiceImpl implements BookingService {
                     int quantity = Integer.parseInt(entry.getValue());
                     if (quantity > 0) {
                         BookingEquipment stock = new BookingEquipment();
-                        // Set the equipment type (fetch from DB/service if needed)
                         EquipmentType type = equipmentTypeRepository.findById(equipmentTypeId).orElse(null);
                         if (type != null) {
                             stock.setEquipmentType(type);
@@ -169,7 +171,7 @@ public class BookingServiceImpl implements BookingService {
     public Booking createBookingWithAllocations(
         UserAccount userAccount,
         Set<Room> selectedRooms,
-        Map<Long, Integer> equipmentQuantities, // equipmentTypeId -> quantity
+        Map<Long, Integer> equipmentQuantities,
         LocalDateTime startDateTime,
         LocalDateTime endDateTime,
         String purposeNotes
@@ -185,7 +187,6 @@ public class BookingServiceImpl implements BookingService {
         booking.setBookingReason(purposeNotes);
         booking.setRooms(selectedRooms);
 
-        // Save booking first to get ID
         booking = bookingRepository.save(booking);
 
         Set<BookingEquipment> allocations = new HashSet<>();
@@ -200,12 +201,10 @@ public class BookingServiceImpl implements BookingService {
         }
         booking.setEquipmentAllocations(allocations);
 
-        // Save booking again to persist allocations
         booking = bookingRepository.save(booking);
 
         return booking;
     }
-    
     
     @Override
     public Page<Booking> getPaginatedBookingsByUserId(Long userId, int page, int pageSize) {
@@ -213,28 +212,19 @@ public class BookingServiceImpl implements BookingService {
         return bookingRepository.findByUserId(userId, pageable);
     }
     
-    
-    
     @Override
-
-    /**
-     * Returns a list of available rooms for the given date, time, and filters.
-     */
     public List<Room> getAvailableRoomsFiltered(
             String date, String startTime, String endTime,
             String floor, String occupancy, String sort) {
 
-        // 1. Get all available rooms
         List<Room> rooms = roomRepository.findByStatus(Room.RoomStatus.AVAILABLE);
 
-        // 2. Filter by floor
         if (floor != null && !floor.isBlank()) {
             rooms = rooms.stream()
                     .filter(r -> r.getFloor().equalsIgnoreCase(floor))
                     .collect(Collectors.toList());
         }
 
-        // 3. Filter by occupancy
         if (occupancy != null && !occupancy.isBlank()) {
             int minCap = 0, maxCap = Integer.MAX_VALUE;
             if (occupancy.equals("31+")) {
@@ -250,8 +240,7 @@ public class BookingServiceImpl implements BookingService {
                     .collect(Collectors.toList());
         }
 
-        // 4. Filter by date/time availability
-        if (date != null && !date.isBlank() && startTime != null && !startTime.isBlank() && endTime != null && !endTime.isBlank() ){
+        if (date != null && !date.isBlank() && startTime != null && !startTime.isBlank() && endTime != null && !endTime.isBlank()) {
             LocalDate bookingDate = LocalDate.parse(date);
             LocalTime start = LocalTime.parse(startTime);
             LocalTime end = LocalTime.parse(endTime);
@@ -270,7 +259,6 @@ public class BookingServiceImpl implements BookingService {
                     .collect(Collectors.toList());
         }
 
-        // 5. Sort
         if (sort != null) {
             switch (sort) {
                 case "name":
@@ -288,17 +276,19 @@ public class BookingServiceImpl implements BookingService {
         return rooms;
     }
     
-    
     @Override
-    public List<TimeSlot> getFreeSlotsForRoom(Room room, LocalDate date, LocalTime dayStartTime, LocalTime dayEndTime) {
-    	LocalDateTime dayStart = date.atStartOfDay();
-    	LocalDateTime dayEnd = date.atTime(LocalTime.of(23,59)); 
+    public List<TimeSlot> getFreeSlotsForRoom(
+            Room room, LocalDate date, LocalTime dayStartTime, LocalTime dayEndTime) {
+        
+        LocalDateTime dayStart = date.atStartOfDay();
+        LocalDateTime dayEnd = date.atTime(LocalTime.of(23, 59));
 
-    	List<Booking> bookings = bookingRepository.findBookingsByRoomAndTimeRange(room.getId(),dayStart, dayEnd);
+        List<Booking> bookings = bookingRepository.findBookingsByRoomAndTimeRange(room.getId(), dayStart, dayEnd);
         bookings.sort(Comparator.comparing(b -> b.getStartDatetime().toLocalTime()));
 
         List<TimeSlot> freeSlots = new ArrayList<>();
         LocalTime lastEnd = dayStartTime;
+        
         for (Booking b : bookings) {
             LocalTime bookingStart = b.getStartDatetime().toLocalTime();
             if (lastEnd.isBefore(bookingStart)) {
@@ -306,10 +296,14 @@ public class BookingServiceImpl implements BookingService {
             }
             lastEnd = b.getEndDatetime().toLocalTime();
         }
+        
         if (lastEnd.isBefore(dayEndTime)) {
             freeSlots.add(new TimeSlot(lastEnd, dayEndTime));
         }
+        
         return freeSlots;
+    }
+    
     @Override
     @Transactional
     public Booking approveBooking(Long bookingId) {
@@ -319,7 +313,6 @@ public class BookingServiceImpl implements BookingService {
             throw new RuntimeException("Booking not found with ID: " + bookingId);
         }
         
-        // Only PENDING bookings can be approved
         if (booking.getStatus() != Booking.BookingStatus.PENDING) {
             throw new IllegalStateException(
                 "Only PENDING bookings can be approved. Current status: " + booking.getStatus());
@@ -340,7 +333,6 @@ public class BookingServiceImpl implements BookingService {
             throw new RuntimeException("Booking not found with ID: " + bookingId);
         }
         
-        // Only PENDING bookings can be declined
         if (booking.getStatus() != Booking.BookingStatus.PENDING) {
             throw new IllegalStateException(
                 "Only PENDING bookings can be declined. Current status: " + booking.getStatus());
@@ -354,6 +346,8 @@ public class BookingServiceImpl implements BookingService {
         return bookingRepository.save(booking);
     }
 
-  
-
+    @Override
+    public List<Booking> getUserBookings(Long userId) {
+        return bookingRepository.findByUserId(userId);
+    }
 }

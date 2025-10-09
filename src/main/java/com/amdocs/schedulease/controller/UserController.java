@@ -8,6 +8,10 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import java.time.LocalDateTime;
+import java.util.List;
+import com.amdocs.schedulease.entity.Booking;
+import com.amdocs.schedulease.service.BookingService;  // ADD THIS
 
 @Controller
 @RequestMapping("/user")
@@ -15,6 +19,9 @@ public class UserController {
 
     @Autowired
     private UserService userService;
+    
+    @Autowired
+    private BookingService bookingService;  // ADD THIS FIELD
 
     // ========== DASHBOARD ==========
 
@@ -30,14 +37,31 @@ public class UserController {
         user = userService.getUserById(user.getId());
         model.addAttribute("user", user);
 
-        // TODO: Add booking statistics here
-        // For now, just show basic info
-        model.addAttribute("totalBookings", 0);
-        model.addAttribute("upcomingBookings", 0);
-        model.addAttribute("pastBookings", 0);
+        // Get user's bookings and calculate stats
+        List<Booking> allBookings = bookingService.getUserBookings(user.getId());
+        LocalDateTime now = LocalDateTime.now();
+
+        long totalBookings = allBookings.size();
+        
+        // Upcoming bookings = future bookings that are not cancelled
+        long upcomingBookings = allBookings.stream()
+            .filter(b -> b.getStartDatetime().isAfter(now) 
+                      && b.getStatus() != Booking.BookingStatus.CANCELLED)
+            .count();
+        
+        // Past bookings = bookings that already ended
+        long pastBookings = allBookings.stream()
+            .filter(b -> b.getEndDatetime().isBefore(now))
+            .count();
+
+        model.addAttribute("totalBookings", totalBookings);
+        model.addAttribute("upcomingBookings", upcomingBookings);
+        model.addAttribute("pastBookings", pastBookings);
 
         return "user/dashboard";
     }
+
+
 
     // ========== PROFILE ==========
 
