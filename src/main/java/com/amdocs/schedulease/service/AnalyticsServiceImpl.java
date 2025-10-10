@@ -1,9 +1,11 @@
 package com.amdocs.schedulease.service;
 
 import com.amdocs.schedulease.entity.Booking;
+import com.amdocs.schedulease.entity.EquipmentStock;
 import com.amdocs.schedulease.entity.Room;
 import com.amdocs.schedulease.entity.UserAccount;
 import com.amdocs.schedulease.repository.BookingRepository;
+import com.amdocs.schedulease.repository.EquipmentStockRepository;
 import com.amdocs.schedulease.repository.EquipmentTypeRepository;
 import com.amdocs.schedulease.repository.RoomRepository;
 import com.amdocs.schedulease.repository.UserAccountRepository;
@@ -32,6 +34,10 @@ public class AnalyticsServiceImpl implements AnalyticsService {
 
 	@Autowired
 	private EquipmentTypeRepository equipmentTypeRepository;
+	
+	@Autowired
+	private EquipmentStockRepository equipmentStockRepository;
+
 
 	@Override
 	public long getTotalUserCount() {
@@ -147,4 +153,20 @@ public class AnalyticsServiceImpl implements AnalyticsService {
 		return trend.entrySet().stream().sorted(Map.Entry.comparingByKey()).collect(
 				Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, java.util.LinkedHashMap::new));
 	}
+	
+	@Override
+	public List<Booking> getAllBookings() {
+	    return bookingRepository.findAll();
+	}
+
+	@Override
+	public List<Room> getAllRooms() {
+	    return roomRepository.findAll();
+	}
+
+	@Override
+	public List<EquipmentStock> getAllEquipment() {
+	    return equipmentStockRepository.findAll();
+	}
+
 }

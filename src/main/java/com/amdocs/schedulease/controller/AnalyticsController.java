@@ -55,57 +55,10 @@ public class AnalyticsController {
         }
 
         model.addAttribute("user", user);
+        model.addAttribute("reportGenerated", false); // <-- Add this line
         return "admin/reports";
     }
 
-    // ========== GENERATE CUSTOM REPORT ==========
-
-    @PostMapping("/reports/generate")
-    public String generateReport(
-            @RequestParam("reportType") String reportType,
-            @RequestParam("startDate") String startDate,
-            @RequestParam("endDate") String endDate,
-            HttpSession session,
-            Model model) {
-
-        UserAccount user = (UserAccount) session.getAttribute("user");
-        
-        if (user == null) {
-            return "redirect:/auth/login";
-        }
-
-        try {
-            LocalDate start = LocalDate.parse(startDate);
-            LocalDate end = LocalDate.parse(endDate);
-
-            // Generate report based on type
-            switch (reportType) {
-                case "bookings":
-                    long bookingCount = analyticsService.getBookingsInDateRange(start, end);
-                    model.addAttribute("reportData", "Total bookings in range: " + bookingCount);
-                    break;
-                case "users":
-                    model.addAttribute("reportData", "User statistics generated");
-                    break;
-                case "revenue":
-                    model.addAttribute("reportData", "Revenue report (coming soon)");
-                    break;
-                default:
-                    model.addAttribute("reportData", "Unknown report type");
-            }
-
-            model.addAttribute("user", user);
-            model.addAttribute("reportGenerated", true);
-            model.addAttribute("reportType", reportType);
-            model.addAttribute("startDate", startDate);
-            model.addAttribute("endDate", endDate);
-
-        } catch (Exception e) {
-            model.addAttribute("errorMessage", "Failed to generate report: " + e.getMessage());
-        }
-
-        return "admin/reports";
-    }
 
     // ========== API ENDPOINTS FOR AJAX CALLS ==========
 
