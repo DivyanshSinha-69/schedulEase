@@ -68,10 +68,20 @@ public class UserController {
     @GetMapping("/profile")
     public String showProfile(HttpSession session, Model model) {
         UserAccount user = (UserAccount) session.getAttribute("user");
-        
         if (user == null) {
             return "redirect:/auth/login";
         }
+
+        // Set dashboard link based on user's role
+        String dashboardLink;
+        if (user.hasRole("ADMIN")) {
+            dashboardLink = "/admin/dashboard";
+        } else if (user.hasRole("STAFF")) {
+            dashboardLink = "/staff/dashboard";
+        } else {
+            dashboardLink = "/user/dashboard";
+        }
+        model.addAttribute("dashboardLink", dashboardLink);
 
         // Refresh user data
         user = userService.getUserById(user.getId());
@@ -79,6 +89,8 @@ public class UserController {
 
         return "user/profile";
     }
+
+
 
     @PostMapping("/profile")
     public String updateProfile(
@@ -113,14 +125,26 @@ public class UserController {
     @GetMapping("/settings")
     public String showSettings(HttpSession session, Model model) {
         UserAccount user = (UserAccount) session.getAttribute("user");
-        
         if (user == null) {
             return "redirect:/auth/login";
         }
 
+        // Set dashboard link based on user's role
+        String dashboardLink;
+        if (user.hasRole("ADMIN")) {
+            dashboardLink = "/admin/dashboard";
+        } else if (user.hasRole("STAFF")) {
+            dashboardLink = "/staff/dashboard";
+        } else {
+            dashboardLink = "/user/dashboard";
+        }
+        model.addAttribute("dashboardLink", dashboardLink);
+
         model.addAttribute("user", user);
         return "user/settings";
     }
+
+
 
     @PostMapping("/settings/change-password")
     public String changePassword(

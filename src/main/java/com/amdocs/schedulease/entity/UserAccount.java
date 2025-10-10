@@ -135,4 +135,8 @@ public class UserAccount {
     public void setRoles(Set<Role> roles) {
         this.roles = roles;
     }
+    public boolean hasRole(String roleName) {
+        if (roles == null) return false;
+        return roles.stream().anyMatch(r -> r.getName().name().equalsIgnoreCase(roleName));
+    }
 }

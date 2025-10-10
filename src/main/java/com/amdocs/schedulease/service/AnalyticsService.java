@@ -1,7 +1,12 @@
 package com.amdocs.schedulease.service;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
+
+import com.amdocs.schedulease.entity.Booking;
+import com.amdocs.schedulease.entity.EquipmentStock;
+import com.amdocs.schedulease.entity.Room;
 
 public interface AnalyticsService {
     
@@ -72,4 +77,8 @@ public interface AnalyticsService {
      * @return Map of date to booking count
      */
     Map<LocalDate, Long> getBookingTrend();
+    List<Booking> getAllBookings();
+    List<Room> getAllRooms();
+    List<EquipmentStock> getAllEquipment();
+
 }

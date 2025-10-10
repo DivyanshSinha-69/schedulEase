@@ -21,23 +21,35 @@
             </div>
         </div>
 
-        <!-- Coming Soon Alert -->
-        <div class="alert alert-info">
-            <i class="bi bi-info-circle"></i> <strong>Note:</strong> 
-            Booking data will be available once Module 2 (Booking Management) is integrated.
-        </div>
-
         <!-- Placeholder Card -->
         <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="bi bi-table"></i> All Bookings</h5>
-            </div>
-            <div class="card-body text-center py-5">
-                <i class="bi bi-calendar3 text-muted" style="font-size: 4rem;"></i>
-                <p class="text-muted mt-3">No bookings to display</p>
-                <p class="text-muted">Booking management features coming soon</p>
-            </div>
-        </div>
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="bi bi-table"></i> All Bookings</h5>
+    </div>
+    <div class="card-body p-0">
+        <table class="table mb-0">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>User</th>
+                <th>Status</th>
+                <th>Start</th>
+                <th>End</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="booking : ${bookings}">
+                <td th:text="${booking.id}"></td>
+                <td th:text="${booking.user.fullName}"></td>
+                <td th:text="${booking.status}"></td>
+                <td th:text="${#temporals.format(booking.startDatetime, 'dd MMM yyyy HH:mm')}"></td>
+                <td th:text="${#temporals.format(booking.endDatetime, 'dd MMM yyyy HH:mm')}"></td>
+              </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
     </main>
 
     <div th:replace="~{fragments/footer :: footer}"></div>
