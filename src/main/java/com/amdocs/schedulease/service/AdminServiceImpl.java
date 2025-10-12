@@ -191,4 +191,11 @@ public class AdminServiceImpl implements AdminService {
     public List<StaffProfile> getAllStaff() {
         return staffProfileRepository.findAll();
     }
+    
+    @Override
+    public boolean isPasswordValid(String password) {
+        String pattern = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[^A-Za-z\\d]).{8,}$";
+        return password != null && password.matches(pattern);
+    }
+
 }
