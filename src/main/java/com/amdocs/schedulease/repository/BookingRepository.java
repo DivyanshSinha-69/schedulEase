@@ -29,6 +29,25 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     
     Page<Booking> findByUserId(Long userId, org.springframework.data.domain.Pageable pageable);
 
+    @Query("SELECT DISTINCT b FROM Booking b " +
+            "LEFT JOIN FETCH b.user " +
+            "LEFT JOIN FETCH b.rooms " +
+            "WHERE b.status = :status AND b.createdAt < :threshold " +
+            "ORDER BY b.createdAt ASC")
+     List<Booking> findByStatusAndCreatedAtBefore(
+         @Param("status") Booking.BookingStatus status, 
+         @Param("threshold") LocalDateTime threshold
+     );
+    
+    @Query("SELECT DISTINCT b FROM Booking b " +
+    	       "LEFT JOIN FETCH b.user " +
+    	       "LEFT JOIN FETCH b.rooms " +
+    	       "WHERE b.status = 'CONFIRMED' AND b.startDatetime BETWEEN :start AND :end " +
+    	       "ORDER BY b.startDatetime ASC")
+    	List<Booking> findConfirmedBookingsBetween(
+    	    @Param("start") LocalDateTime start, 
+    	    @Param("end") LocalDateTime end
+    	);
     @Query("SELECT b FROM Booking b JOIN b.rooms r WHERE r.id = :roomId AND b.startDatetime < :dayEnd AND b.endDatetime > :dayStart")
     List<Booking> findBookingsByRoomAndTimeRange(@Param("roomId") Long roomId, 
                                                   @Param("dayStart") LocalDateTime dayStart, 

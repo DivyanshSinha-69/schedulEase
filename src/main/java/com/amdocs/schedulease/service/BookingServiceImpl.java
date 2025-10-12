@@ -10,22 +10,28 @@ import com.amdocs.schedulease.entity.EquipmentStock;
 import com.amdocs.schedulease.entity.EquipmentType;
 import com.amdocs.schedulease.repository.BookingRepository;
 import com.amdocs.schedulease.repository.RoomRepository;
+import com.amdocs.schedulease.repository.StaffProfileRepository;
 import com.amdocs.schedulease.repository.EquipmentStockRepository;
 import com.amdocs.schedulease.repository.EquipmentTypeRepository;
 import com.amdocs.schedulease.exception.BookingConflictException;
 import com.amdocs.schedulease.util.TimeSlot;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -38,16 +44,39 @@ import java.util.stream.Collectors;
 @Service
 public class BookingServiceImpl implements BookingService {
 
+    // Logger for scheduling
+    private static final Logger logger = LoggerFactory.getLogger(BookingServiceImpl.class);
+
     private final BookingRepository bookingRepository;
     private final RoomRepository roomRepository;
     private final EquipmentStockRepository equipmentStockRepository;
     private final EquipmentTypeRepository equipmentTypeRepository;
-    
+
+    // NEW: Properties for reminders scheduler
+    @Value("${staff.reminders.enabled:false}")
+    private boolean remindersEnabled;
+
+    @Value("${staff.reminders.email-enabled:false}")
+    private boolean emailEnabled;
+
+    @Value("${staff.reminders.hours-ahead:24}")
+    private int hoursAhead;
+
+    @Value("${staff.reminders.recipient-email:staff@schedulease.com}")
+    private String staffEmail;
+
+    // NEW: EmailService for sending reminders
+    @Autowired
+    private EmailService emailService;
+    @Autowired
+    private StaffProfileRepository staffProfileRepository;
+
+
     @Autowired
     public BookingServiceImpl(BookingRepository bookingRepository,
-                             RoomRepository roomRepository,
-                             EquipmentStockRepository equipmentStockRepository,
-                             EquipmentTypeRepository equipmentTypeRepository) {
+                              RoomRepository roomRepository,
+                              EquipmentStockRepository equipmentStockRepository,
+                              EquipmentTypeRepository equipmentTypeRepository) {
         this.bookingRepository = bookingRepository;
         this.roomRepository = roomRepository;
         this.equipmentStockRepository = equipmentStockRepository;
@@ -58,12 +87,12 @@ public class BookingServiceImpl implements BookingService {
     @Transactional
     public Booking createBooking(Booking booking) {
         List<Long> roomIds = booking.getRooms().stream()
-                                    .map(Room::getId)
-                                    .collect(Collectors.toList());
-        
+                .map(Room::getId)
+                .collect(Collectors.toList());
         if (hasConflict(roomIds, booking.getStartDatetime(), booking.getEndDatetime())) {
             throw new BookingConflictException("Booking times conflict with existing bookings.");
         }
+
         return bookingRepository.save(booking);
     }
 
@@ -83,24 +112,23 @@ public class BookingServiceImpl implements BookingService {
     public Booking cancelBooking(Long bookingId, String cancelReason) {
         Booking booking = getBookingById(bookingId);
         if (booking == null) return null;
-        
+
         // Check if booking is already cancelled
         if (booking.getStatus() == Booking.BookingStatus.CANCELLED) {
             throw new IllegalStateException("Booking is already cancelled");
         }
-        
+
         // Users can cancel PENDING or CONFIRMED bookings
-        if (booking.getStatus() != Booking.BookingStatus.PENDING && 
-            booking.getStatus() != Booking.BookingStatus.CONFIRMED) {
+        if (booking.getStatus() != Booking.BookingStatus.PENDING &&
+                booking.getStatus() != Booking.BookingStatus.CONFIRMED) {
             throw new IllegalStateException(
-                "Cannot cancel booking with status: " + booking.getStatus());
+                    "Cannot cancel booking with status: " + booking.getStatus());
         }
-        
+
         booking.setStatus(Booking.BookingStatus.CANCELLED);
         booking.setCancelReason(cancelReason);
         booking.setCancelledAt(LocalDateTime.now());
         booking.setUpdatedAt(LocalDateTime.now());
-        
         return bookingRepository.save(booking);
     }
 
@@ -134,12 +162,12 @@ public class BookingServiceImpl implements BookingService {
     public List<String> getUniqueRoomFloors() {
         return roomRepository.findDistinctAvailableFloors();
     }
-    
+
     @Override
     public List<Room> getRoomsByIds(List<Long> roomIds) {
         return roomRepository.findAllById(roomIds);
     }
-    
+
     @Override
     public List<BookingEquipment> getEquipmentFromParams(Map<String, String> allParams) {
         List<BookingEquipment> equipmentList = new ArrayList<>();
@@ -165,16 +193,16 @@ public class BookingServiceImpl implements BookingService {
         }
         return equipmentList;
     }
-    
+
     @Override
     @Transactional
     public Booking createBookingWithAllocations(
-        UserAccount userAccount,
-        Set<Room> selectedRooms,
-        Map<Long, Integer> equipmentQuantities,
-        LocalDateTime startDateTime,
-        LocalDateTime endDateTime,
-        String purposeNotes
+            UserAccount userAccount,
+            Set<Room> selectedRooms,
+            Map<Long, Integer> equipmentQuantities,
+            LocalDateTime startDateTime,
+            LocalDateTime endDateTime,
+            String purposeNotes
     ) {
         int totalCapacityRequested = selectedRooms.stream().mapToInt(Room::getOccupancy).sum();
 
@@ -199,19 +227,19 @@ public class BookingServiceImpl implements BookingService {
             allocation.setId(new BookingEquipmentId(booking.getId(), equipmentType.getId()));
             allocations.add(allocation);
         }
-        booking.setEquipmentAllocations(allocations);
 
+        booking.setEquipmentAllocations(allocations);
         booking = bookingRepository.save(booking);
 
         return booking;
     }
-    
+
     @Override
     public Page<Booking> getPaginatedBookingsByUserId(Long userId, int page, int pageSize) {
         Pageable pageable = PageRequest.of(page, pageSize, Sort.by("startDatetime").descending());
         return bookingRepository.findByUserId(userId, pageable);
     }
-    
+
     @Override
     public List<Room> getAvailableRoomsFiltered(
             String date, String startTime, String endTime,
@@ -234,6 +262,7 @@ public class BookingServiceImpl implements BookingService {
                 minCap = Integer.parseInt(parts[0]);
                 maxCap = Integer.parseInt(parts[1]);
             }
+
             final int min = minCap, max = maxCap;
             rooms = rooms.stream()
                     .filter(r -> r.getOccupancy() >= min && r.getOccupancy() <= max)
@@ -275,11 +304,11 @@ public class BookingServiceImpl implements BookingService {
 
         return rooms;
     }
-    
+
     @Override
     public List<TimeSlot> getFreeSlotsForRoom(
             Room room, LocalDate date, LocalTime dayStartTime, LocalTime dayEndTime) {
-        
+
         LocalDateTime dayStart = date.atStartOfDay();
         LocalDateTime dayEnd = date.atTime(LocalTime.of(23, 59));
 
@@ -288,39 +317,38 @@ public class BookingServiceImpl implements BookingService {
 
         List<TimeSlot> freeSlots = new ArrayList<>();
         LocalTime lastEnd = dayStartTime;
-        
+
         for (Booking b : bookings) {
             LocalTime bookingStart = b.getStartDatetime().toLocalTime();
             if (lastEnd.isBefore(bookingStart)) {
                 freeSlots.add(new TimeSlot(lastEnd, bookingStart));
             }
+
             lastEnd = b.getEndDatetime().toLocalTime();
         }
-        
+
         if (lastEnd.isBefore(dayEndTime)) {
             freeSlots.add(new TimeSlot(lastEnd, dayEndTime));
         }
-        
+
         return freeSlots;
     }
-    
+
     @Override
     @Transactional
     public Booking approveBooking(Long bookingId) {
         Booking booking = getBookingById(bookingId);
-        
         if (booking == null) {
             throw new RuntimeException("Booking not found with ID: " + bookingId);
         }
-        
+
         if (booking.getStatus() != Booking.BookingStatus.PENDING) {
             throw new IllegalStateException(
-                "Only PENDING bookings can be approved. Current status: " + booking.getStatus());
+                    "Only PENDING bookings can be approved. Current status: " + booking.getStatus());
         }
-        
+
         booking.setStatus(Booking.BookingStatus.CONFIRMED);
         booking.setUpdatedAt(LocalDateTime.now());
-        
         return bookingRepository.save(booking);
     }
 
@@ -328,21 +356,19 @@ public class BookingServiceImpl implements BookingService {
     @Transactional
     public Booking declineBooking(Long bookingId, String reason) {
         Booking booking = getBookingById(bookingId);
-        
         if (booking == null) {
             throw new RuntimeException("Booking not found with ID: " + bookingId);
         }
-        
+
         if (booking.getStatus() != Booking.BookingStatus.PENDING) {
             throw new IllegalStateException(
-                "Only PENDING bookings can be declined. Current status: " + booking.getStatus());
+                    "Only PENDING bookings can be declined. Current status: " + booking.getStatus());
         }
-        
+
         booking.setStatus(Booking.BookingStatus.CANCELLED);
         booking.setCancelReason(reason);
         booking.setCancelledAt(LocalDateTime.now());
         booking.setUpdatedAt(LocalDateTime.now());
-        
         return bookingRepository.save(booking);
     }
 
@@ -350,4 +376,90 @@ public class BookingServiceImpl implements BookingService {
     public List<Booking> getUserBookings(Long userId) {
         return bookingRepository.findByUserId(userId);
     }
+
+    // NEW: Feature 1 - Get expired pending bookings
+    @Override
+    public List<Booking> getExpiredPendingBookings(int thresholdHours) {
+        LocalDateTime threshold = LocalDateTime.now().minusHours(thresholdHours);
+        return bookingRepository.findByStatusAndCreatedAtBefore(
+                Booking.BookingStatus.PENDING,
+                threshold
+        );
+    }
+
+    // NEW: Feature 2 - Get upcoming confirmed bookings
+    @Override
+    public List<Booking> getUpcomingConfirmedBookings(int hoursAhead) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime end = now.plusHours(hoursAhead);
+        return bookingRepository.findConfirmedBookingsBetween(now, end);
+    }
+
+    // NEW: Feature 2 - Daily scheduler for booking reminders
+    /**
+     * Daily scheduled task that runs at 8:00 AM to send reminders
+     * Cron format: "0 0 8 * * *" = Every day at 8:00 AM
+     */
+    @Scheduled(cron = "${staff.reminders.cron:0 0 8 * * *}")
+    @ConditionalOnProperty(name = "staff.reminders.enabled", havingValue = "true")
+    public void sendDailyBookingReminders() {
+        logger.info("===== Starting daily booking reminder scheduler at {} =====", LocalDateTime.now());
+
+        try {
+            List<Booking> upcomingBookings = getUpcomingConfirmedBookings(hoursAhead);
+
+            if (upcomingBookings.isEmpty()) {
+                logger.info("No upcoming bookings found for the next {} hours", hoursAhead);
+                return;
+            }
+
+            logger.info("Found {} confirmed booking(s) starting in the next {} hours",
+                    upcomingBookings.size(), hoursAhead);
+
+            if (emailEnabled) {
+                sendReminderEmail(upcomingBookings);  // CHANGED BACK
+            } else {
+                logger.info("Email reminders disabled. Bookings logged only.");
+                logUpcomingBookings(upcomingBookings);
+            }
+
+        } catch (Exception e) {
+            logger.error("Error occurred while processing booking reminders", e);
+        }
+
+        logger.info("===== Daily booking reminder scheduler completed at {} =====", LocalDateTime.now());
+    }
+
+    private void sendReminderEmail(List<Booking> bookings) {
+        try {
+            emailService.sendBookingRemindersEmail(staffEmail, bookings);
+            logger.info("Reminder email sent successfully to {}", staffEmail);
+        } catch (Exception e) {
+            logger.error("Failed to send reminder email to {}", staffEmail, e);
+        }
+    }
+
+    private void logUpcomingBookings(List<Booking> bookings) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy HH:mm");
+        logger.info("========== Upcoming Bookings ==========");
+        for (Booking booking : bookings) {
+            String roomNames = booking.getRooms().stream()
+                    .map(Room::getName)
+                    .reduce((a, b) -> a + ", " + b)
+                    .orElse("N/A");
+
+            logger.info("Booking #{}: {} - Start: {} | Room(s): {} | Capacity: {}",
+                    booking.getId(),
+                    booking.getUser().getEmail(),
+                    booking.getStartDatetime().format(formatter),
+                    roomNames,
+                    booking.getTotalCapacityRequested());
+        }
+        logger.info("=======================================");
+    }// Add this method for immediate testing
+    public void testSchedulerManually() {
+        logger.info("===== MANUAL TEST: Calling scheduler directly =====");
+        sendDailyBookingReminders();
+    }
+
 }
