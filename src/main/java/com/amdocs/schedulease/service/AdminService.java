@@ -80,4 +80,7 @@ public interface AdminService {
      * @return List of staff profiles
      */
     List<StaffProfile> getAllStaff();
+    
+    boolean isPasswordValid(String password);
+
 }

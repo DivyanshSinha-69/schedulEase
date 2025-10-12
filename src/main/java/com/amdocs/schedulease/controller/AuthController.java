@@ -38,11 +38,15 @@ public class AuthController {
             return "redirect:/auth/signup";
         }
 
-        // Validate password strength (minimum 8 characters)
-        if (password.length() < 8) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Password must be at least 8 characters long");
+     // Validate password strength and pattern
+        if (!authService.isPasswordValid(password)) {
+            redirectAttributes.addFlashAttribute("errorMessage", 
+                "Password must be at least 8 characters, contain a letter, a digit, and a special symbol");
             return "redirect:/auth/signup";
         }
+        
+        phone = phone.replaceFirst("^0+(?!$)", "");
+
 
         try {
             authService.registerUser(email, password, fullName, phone);
@@ -237,11 +241,12 @@ public class AuthController {
             return "redirect:/auth/set-new-password";
         }
 
-        // Validate password strength
-        if (newPassword.length() < 8) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Password must be at least 8 characters long");
+        if (!authService.isPasswordValid(newPassword)) {
+            redirectAttributes.addFlashAttribute("errorMessage", 
+                "Password must be at least 8 characters, contain a letter, a digit, and a special symbol");
             return "redirect:/auth/set-new-password";
         }
+
 
         try {
             authService.resetPasswordWithOtp(email, newPassword);

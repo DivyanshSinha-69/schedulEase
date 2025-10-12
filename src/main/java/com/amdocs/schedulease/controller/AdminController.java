@@ -159,45 +159,54 @@ public class AdminController {
 	}
 
 	@PostMapping("/staff/create")
-	public String createStaffAccount(@RequestParam("email") String email, @RequestParam("password") String password,
-			@RequestParam("confirmPassword") String confirmPassword, @RequestParam("fullName") String fullName,
-			@RequestParam("phone") String phone, @RequestParam("department") String department,
-			@RequestParam("dob") String dob, // NEW
-			RedirectAttributes redirectAttributes) {
+	public String createStaffAccount(
+	    @RequestParam("email") String email,
+	    @RequestParam("password") String password,
+	    @RequestParam("confirmPassword") String confirmPassword,
+	    @RequestParam("fullName") String fullName,
+	    @RequestParam("phone") String phone,
+	    @RequestParam("department") String department,
+	    @RequestParam("dob") String dob,
+	    RedirectAttributes redirectAttributes) {
 
-		// Validate passwords match
-		if (!password.equals(confirmPassword)) {
-			redirectAttributes.addFlashAttribute("errorMessage", "Passwords do not match");
-			return "redirect:/admin/staff-management";
-		}
+	    // Validate passwords match
+	    if (!password.equals(confirmPassword)) {
+	        redirectAttributes.addFlashAttribute("errorMessage", "Passwords do not match");
+	        return "redirect:/admin/staff-management";
+	    }
 
-		// Validate password strength
-		if (password.length() < 8) {
-			redirectAttributes.addFlashAttribute("errorMessage", "Password must be at least 8 characters");
-			return "redirect:/admin/staff-management";
-		}
+	    // Validate password strength and pattern
+	    if (!adminService.isPasswordValid(password)) {
+	        redirectAttributes.addFlashAttribute("errorMessage", 
+	            "Password must be at least 8 characters, contain a letter, a digit, and a special symbol");
+	        return "redirect:/admin/staff-management";
+	    }
 
-		try {
-			// Parse and validate DOB
-			java.time.LocalDate parsedDob = java.time.LocalDate.parse(dob);
+	    // Trim leading zeros from phone
+	    phone = phone.replaceFirst("^0+(?!$)", "");
 
-			// Validate DOB is not in future
-			if (parsedDob.isAfter(java.time.LocalDate.now())) {
-				redirectAttributes.addFlashAttribute("errorMessage", "Date of Birth cannot be in the future");
-				return "redirect:/admin/staff-management";
-			}
+	    try {
+	        // Parse and validate DOB
+	        java.time.LocalDate parsedDob = java.time.LocalDate.parse(dob);
 
-			// Call service with DOB
-			adminService.createStaffAccount(email, password, fullName, phone, department, parsedDob);
-			redirectAttributes.addFlashAttribute("successMessage", "Staff account created successfully");
-		} catch (java.time.format.DateTimeParseException e) {
-			redirectAttributes.addFlashAttribute("errorMessage", "Invalid date format");
-		} catch (Exception e) {
-			redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
-		}
+	        // Validate DOB is not in future
+	        if (parsedDob.isAfter(java.time.LocalDate.now())) {
+	            redirectAttributes.addFlashAttribute("errorMessage", "Date of Birth cannot be in the future");
+	            return "redirect:/admin/staff-management";
+	        }
 
-		return "redirect:/admin/staff-management";
+	        // Call service with DOB
+	        adminService.createStaffAccount(email, password, fullName, phone, department, parsedDob);
+	        redirectAttributes.addFlashAttribute("successMessage", "Staff account created successfully");
+	    } catch (java.time.format.DateTimeParseException e) {
+	        redirectAttributes.addFlashAttribute("errorMessage", "Invalid date format");
+	    } catch (Exception e) {
+	        redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+	    }
+
+	    return "redirect:/admin/staff-management";
 	}
+
 
 	// ========== ROLE MANAGEMENT ==========
 

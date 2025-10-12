@@ -189,5 +189,11 @@ public class AuthServiceImpl implements AuthService {
         // Delete all OTPs for this email
         otpRepository.deleteByEmail(email);
     }
+    
+    @Override
+    public boolean isPasswordValid(String password) {
+        String pattern = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[^A-Za-z\\d]).{8,}$";
+        return password != null && password.matches(pattern);
+    }
 
 }

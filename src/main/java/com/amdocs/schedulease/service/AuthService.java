@@ -50,4 +50,7 @@ public interface AuthService {
     void initiateForgotPassword(String email);
     boolean validateOtp(String email, String otp);
     void resetPasswordWithOtp(String email, String newPassword);
+    
+    boolean isPasswordValid(String password);
+
 }
