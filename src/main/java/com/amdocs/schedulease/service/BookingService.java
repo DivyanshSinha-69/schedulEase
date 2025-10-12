@@ -77,4 +77,8 @@ public interface BookingService {
             String floor, String occupancy, String sort);
     
     List<TimeSlot> getFreeSlotsForRoom(Room room, LocalDate date, LocalTime dayStart, LocalTime dayEnd);
+    List<Booking> getExpiredPendingBookings(int thresholdHours);
+
+    List<Booking> getUpcomingConfirmedBookings(int hoursAhead);
+
 }

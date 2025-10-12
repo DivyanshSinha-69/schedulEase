@@ -1,6 +1,6 @@
 package com.amdocs.schedulease.service;
 
-import com.amdocs.schedulease.entity.Booking;
+
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,13 +8,21 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+import com.amdocs.schedulease.entity.Booking;
+
 import java.time.format.DateTimeFormatter;
 
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import org.slf4j.Logger;  // ADD THIS IMPORT
+import org.slf4j.LoggerFactory;  // ADD THIS IMPORT
 @Service
 public class EmailServiceImpl implements EmailService {
 
+	private static final Logger logger = LoggerFactory.getLogger(EmailServiceImpl.class);
     @Autowired
     private JavaMailSender mailSender;
+    
 
     private static final DateTimeFormatter DATE_FORMATTER = 
         DateTimeFormatter.ofPattern("dd MMM yyyy, hh:mm a");
@@ -225,4 +233,111 @@ public class EmailServiceImpl implements EmailService {
             "</body>" +
             "</html>";
     }
+    
+    @Override
+    public void sendBookingRemindersEmail(String recipientEmail, List<Booking> bookings) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            
+            // Split comma-separated emails
+            String[] emailArray = recipientEmail.split(",");
+            
+            // Trim whitespace from each email
+            for (int i = 0; i < emailArray.length; i++) {
+                emailArray[i] = emailArray[i].trim();
+            }
+            
+            helper.setTo(emailArray);
+            helper.setSubject("Daily Booking Reminders - " + bookings.size() + " Upcoming Booking(s)");
+            helper.setFrom("noreply@schedulease.com");
+            
+            String htmlContent = buildReminderEmailTemplate(bookings);
+            helper.setText(htmlContent, true);
+            
+            mailSender.send(message);
+            logger.info("Reminder email sent to {} staff member(s)", emailArray.length);
+            
+        } catch (MessagingException e) {
+            logger.error("Failed to send reminder email", e);
+            throw new RuntimeException("Failed to send reminder email", e);
+        }
+    }
+
+
+
+    private String buildReminderEmailTemplate(List<Booking> bookings) {
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("EEEE, MMMM dd, yyyy");
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("hh:mm a");
+        
+        StringBuilder html = new StringBuilder();
+        html.append("<!DOCTYPE html>")
+            .append("<html>")
+            .append("<head>")
+            .append("<meta charset='UTF-8'>")
+            .append("<style>")
+            .append("body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f4f4f4; margin: 0; padding: 0; }")
+            .append(".container { max-width: 600px; margin: 20px auto; background: white; }")
+            .append(".header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }")
+            .append(".content { padding: 30px; }")
+            .append(".booking-card { background: #f8f9fa; border-left: 4px solid #667eea; padding: 20px; margin: 15px 0; border-radius: 4px; }")
+            .append(".booking-id { color: #667eea; font-weight: bold; font-size: 18px; margin-bottom: 10px; }")
+            .append(".label { color: #6c757d; font-size: 12px; text-transform: uppercase; font-weight: bold; margin-top: 10px; }")
+            .append(".value { color: #333; font-size: 14px; margin-top: 3px; }")
+            .append(".footer { background: #343a40; color: white; padding: 20px; text-align: center; font-size: 12px; }")
+            .append("</style>")
+            .append("</head>")
+            .append("<body>")
+            .append("<div class='container'>")
+            .append("<div class='header'>")
+            .append("<h1 style='margin: 0;'>📅 Daily Booking Reminders</h1>")
+            .append("<p style='margin: 10px 0 0 0;'>Confirmed bookings starting in the next 24 hours</p>")
+            .append("</div>")
+            .append("<div class='content'>")
+            .append("<p>Hello Staff Team,</p>")
+            .append("<p>Here are the confirmed bookings scheduled to start within the next 24 hours:</p>");
+        
+        for (Booking booking : bookings) {
+            String roomNames = booking.getRooms().stream()
+                .map(r -> r.getName())
+                .reduce((a, b) -> a + ", " + b)
+                .orElse("N/A");
+                
+            html.append("<div class='booking-card'>")
+                .append("<div class='booking-id'>Booking #").append(booking.getId()).append("</div>")
+                .append("<div class='label'>Guest</div>")
+                .append("<div class='value'>").append(booking.getUser().getEmail()).append("</div>")
+                .append("<div class='label'>Start Date & Time</div>")
+                .append("<div class='value'>").append(booking.getStartDatetime().format(dateFormatter))
+                .append(" at ").append(booking.getStartDatetime().format(timeFormatter)).append("</div>")
+                .append("<div class='label'>End Time</div>")
+                .append("<div class='value'>").append(booking.getEndDatetime().format(timeFormatter)).append("</div>")
+                .append("<div class='label'>Room(s)</div>")
+                .append("<div class='value'>").append(roomNames).append("</div>")
+                .append("<div class='label'>Capacity</div>")
+                .append("<div class='value'>").append(booking.getTotalCapacityRequested()).append(" people</div>");
+            
+            if (booking.getBookingReason() != null && !booking.getBookingReason().isEmpty()) {
+                html.append("<div class='label'>Purpose</div>")
+                    .append("<div class='value'>").append(booking.getBookingReason()).append("</div>");
+            }
+            
+            html.append("</div>");
+        }
+        
+        html.append("<p style='margin-top: 20px;'><strong>Total Bookings:</strong> ").append(bookings.size()).append("</p>")
+            .append("<p>Please ensure all rooms and equipment are prepared in advance.</p>")
+            .append("</div>")
+            .append("<div class='footer'>")
+            .append("<p style='margin: 0;'>This is an automated reminder from SchedEase</p>")
+            .append("<p style='margin: 5px 0 0 0;'>© 2025 SchedEase. All rights reserved.</p>")
+            .append("</div>")
+            .append("</div>")
+            .append("</body>")
+            .append("</html>");
+        
+        return html.toString();
+    }
+    
+    
 }

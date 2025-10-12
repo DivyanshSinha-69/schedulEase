@@ -141,8 +141,167 @@
                 </div>
             </div>
         </div>
-    </main>
-    
+
+      
+<div th:if="${expiryNotificationsEnabled}" class="row mt-4">
+    <div class="col-12">
+        <div class="card border-warning">
+            <div class="card-header bg-warning bg-opacity-10 border-warning">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-3">
+                        <i class="bi bi-exclamation-triangle-fill text-warning fs-3"></i>
+                        <div>
+                            <h5 class="mb-1 fw-bold">
+                                Pending Bookings Older Than <span th:text="${expiryThresholdHours}">48</span> Hours
+                            </h5>
+                            <p class="mb-0 text-muted small">
+                                <span class="fw-semibold" th:text="${expiredBookingsCount}">0</span> booking(s) require immediate attention
+                            </p>
+                        </div>
+                    </div>
+                    <a th:href="@{/staff/bookings?status=PENDING}" 
+                       class="btn btn-warning">
+                        <i class="bi bi-list"></i> View All Pending
+                    </a>
+                </div>
+            </div>
+
+            <!-- Expired Bookings List -->
+            <div th:if="${expiredBookingsCount > 0}" class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">ID</th>
+                                <th scope="col">User Email</th>
+                                <th scope="col">Booking Time</th>
+                                <th scope="col">Created</th>
+                                <th scope="col">Age</th>
+                                <th scope="col">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="booking : ${expiredBookings}">
+                                <td class="fw-medium" th:text="'#' + ${booking.id}">#123</td>
+                                <td>
+                                    <div class="fw-medium" th:text="${booking.user.email}">john@example.com</div>
+                                </td>
+                                <td>
+                                    <div th:text="${#temporals.format(booking.startDatetime, 'MMM dd, HH:mm')}">Jan 15, 10:00</div>
+                                    <div class="text-muted small" th:text="'to ' + ${#temporals.format(booking.endDatetime, 'HH:mm')}">to 12:00</div>
+                                </td>
+                                <td class="text-muted" 
+                                    th:text="${#temporals.format(booking.createdAt, 'MMM dd, yyyy HH:mm')}">
+                                    Jan 01, 2024 10:00
+                                </td>
+                                <td>
+                                    <span class="badge bg-danger"
+                                          th:with="hoursOld=${T(java.time.temporal.ChronoUnit).HOURS.between(booking.createdAt, T(java.time.LocalDateTime).now())}">
+                                        <i class="bi bi-clock"></i>
+                                        <span th:text="${hoursOld} + ' hrs'">50 hrs</span>
+                                    </span>
+                                </td>
+                                <td>
+                                    <a th:href="@{/staff/bookings/view/{id}(id=${booking.id})}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i> View
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- NEW: Tomorrow's Bookings Card - INSERT THIS AFTER EXPIRED BOOKINGS -->
+<div th:if="${remindersEnabled}" class="row mt-4">
+    <div class="col-12">
+        <div class="card border-success">
+            <div class="card-header bg-success bg-opacity-10 border-success">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-3">
+                        <i class="bi bi-calendar-check-fill text-success fs-3"></i>
+                        <div>
+                            <h5 class="mb-1 fw-bold">
+                                Upcoming Confirmed Bookings (Next 24 Hours)
+                            </h5>
+                            <p class="mb-0 text-muted small">
+                                <span class="fw-semibold" th:text="${upcomingBookingsCount}">0</span> booking(s) starting soon
+                            </p>
+                        </div>
+                    </div>
+                    <a th:href="@{/staff/bookings?status=CONFIRMED}" 
+                       class="btn btn-success">
+                        <i class="bi bi-list"></i> View All Confirmed
+                    </a>
+                </div>
+            </div>
+
+            <!-- Upcoming Bookings List -->
+            <div th:if="${upcomingBookingsCount > 0}" class="card-body">
+                <div class="list-group">
+                    <div th:each="booking : ${upcomingBookings}" 
+                         class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <span class="badge bg-primary" th:text="'#' + ${booking.id}">Booking #123</span>
+                                    <span class="text-muted">•</span>
+                                    <span class="fw-medium" th:text="${booking.user.email}">john@example.com</span>
+                                </div>
+                                <div class="d-flex gap-4 text-muted small">
+                                    <div>
+                                        <i class="bi bi-clock text-primary"></i>
+                                        <span th:text="${#temporals.format(booking.startDatetime, 'MMM dd, HH:mm')}">Jan 15, 10:00</span>
+                                        <span>-</span>
+                                        <span th:text="${#temporals.format(booking.endDatetime, 'HH:mm')}">12:00</span>
+                                    </div>
+                                    <div>
+                                        <i class="bi bi-door-open text-info"></i>
+                                        <span th:each="room, iterStat : ${booking.rooms}">
+                                            <span th:text="${room.name}">Room A</span>
+                                            <span th:if="${!iterStat.last}">, </span>
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <i class="bi bi-people text-secondary"></i>
+                                        <span th:text="${booking.totalCapacityRequested} + ' people'">10 people</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <a th:href="@{/staff/bookings/view/{id}(id=${booking.id})}" 
+                               class="btn btn-sm btn-outline-primary ms-3">
+                                <i class="bi bi-eye"></i> View
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- No Upcoming Bookings State -->
+            <div th:if="${upcomingBookingsCount == 0}" class="card-body text-center py-5">
+                <i class="bi bi-calendar-x text-muted" style="font-size: 4rem;"></i>
+                <p class="mt-3 mb-1 fw-semibold">No bookings in the next 24 hours</p>
+                <p class="text-muted small mb-0">The schedule is clear for now</p>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- END OF TOMORROW'S BOOKINGS -->
+
+            <!-- No Expired Bookings State -->
+            <div th:if="${expiredBookingsCount == 0}" class="card-body text-center py-5">
+                <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
+                <p class="mt-3 mb-1 fw-semibold">No expired pending bookings</p>
+                <p class="text-muted small mb-0">All pending bookings are within the threshold period</p>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- END OF NEW SECTION -->
+
+        
+        </main>
     <!-- Footer -->
     <div th:replace="~{fragments/footer :: footer}"></div>
     
