@@ -106,16 +106,22 @@ public class UserController {
         }
 
         try {
+            // Update profile via service
             UserAccount updatedUser = userService.updateProfile(user.getId(), fullName, phone);
             
-            // Update session
+            // ✅ CRITICAL FIX: Fetch completely fresh user with all data
+            updatedUser = userService.getUserById(updatedUser.getId());
+            
+            // ✅ Update session with fresh user
             session.setAttribute("user", updatedUser);
+            session.setAttribute("userId", updatedUser.getId());
             
             redirectAttributes.addFlashAttribute("successMessage", "Profile updated successfully");
             return "redirect:/user/profile";
 
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            e.printStackTrace(); // Print full error to console
+            redirectAttributes.addFlashAttribute("errorMessage", "Failed to update profile: " + e.getMessage());
             return "redirect:/user/profile";
         }
     }
